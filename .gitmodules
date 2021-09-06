@@ -4,3 +4,6 @@
 [submodule "dep/libsundaowen"]
 	path = dep/libsundaowen
 	url = https://github.com/dnasdw/libsundaowen_src.git
+[submodule "dep/tinyxml2"]
+	path = dep/tinyxml2
+	url = https://github.com/dnasdw/libsundaowen_tinyxml2.git

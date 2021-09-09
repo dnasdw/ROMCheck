@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<config>
+    <sheets>
+        <sheet>xci</sheet>
+        <sheet>nsp</sheet>
+        <sheet>update</sheet>
+        <sheet>dlc</sheet>
+        <sheet>nuked_xci</sheet>
+        <sheet>nuked_nsp</sheet>
+        <sheet>nuked_update</sheet>
+        <sheet>nuked_dlc</sheet>
+    </sheets>
+</config>

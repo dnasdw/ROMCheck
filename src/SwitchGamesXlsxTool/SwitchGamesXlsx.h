@@ -80,6 +80,7 @@ private:
 	int resaveStyles();
 	int resaveWorkbook();
 	int resaveContentTypes();
+	int writeList();
 	UString m_sXlsxDirName;
 	UString m_sListDirName;
 	bool m_bResave;

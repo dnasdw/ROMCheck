@@ -72,11 +72,13 @@ int CSwitchGamesXlsx::Resave()
 	{
 		return 1;
 	}
-	// /xl/worksheets/sheet%d.xml
+	// read /xl/worksheets/sheet%d.xml
 	if (readSheet() != 0)
 	{
 		return 1;
 	}
+	updateSharedStrings();
+	// write /xl/worksheets/sheet%d.xml
 	if (writeSheet() != 0)
 	{
 		return 1;
@@ -125,7 +127,32 @@ int CSwitchGamesXlsx::Export()
 	{
 		return 1;
 	}
+	updateSharedStrings();
 	if (writeTable() != 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::Import()
+{
+	if (readConfig() != 0)
+	{
+		return 1;
+	}
+	if (readTable() != 0)
+	{
+		return 1;
+	}
+	updateSharedStrings();
+	// write /xl/worksheets/sheet%d.xml
+	if (writeSheet() != 0)
+	{
+		return 1;
+	}
+	// write /xl/sharedStrings.xml
+	if (writeSharedStrings() != 0)
 	{
 		return 1;
 	}
@@ -1556,17 +1583,6 @@ int CSwitchGamesXlsx::readSheet()
 												sheetInfo.Width[nColumnIndex] = static_cast<n32>(sStmtW.size());
 											}
 											mTableRowColumnText[sTableName][nRowIndex][nColumnIndex] = make_pair(true, sStmtW);
-											if (m_bResave)
-											{
-												if (nRowIndex >= 2)
-												{
-													m_mSharedStringsIndexNew[sStmtW] = 0;
-												}
-											}
-											else
-											{
-												m_mSharedStringsIndexNew[sStmtW] = 0;
-											}
 										}
 									}
 									sSheetXml += "</";
@@ -1631,22 +1647,6 @@ int CSwitchGamesXlsx::readSheet()
 			}
 			mRowColumnText[1].erase(3);
 		}
-	}
-	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); /*it*/)
-	{
-		if (it->second < 0)
-		{
-			it = m_mSharedStringsIndexNew.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
-	n32 nSharedStringsIndexNew = 0;
-	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); ++it)
-	{
-		it->second = nSharedStringsIndexNew++;
 	}
 	return 0;
 }
@@ -2195,4 +2195,52 @@ int CSwitchGamesXlsx::sortTable()
 		}
 	}
 	return 0;
+}
+
+void CSwitchGamesXlsx::updateSharedStrings()
+{
+	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
+	{
+		const wstring& sTableName = m_vSheetName[i];
+		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		for (n32 nRowIndex = 0; nRowIndex < sheetInfo.RowCount; nRowIndex++)
+		{
+			map<n32, pair<bool, wstring>>& mColumnText = mRowColumnText[nRowIndex];
+			for (n32 nColumnIndex = 0; nColumnIndex < sheetInfo.ColumnCount; nColumnIndex++)
+			{
+				pair<bool, wstring>& pText = mColumnText[nColumnIndex];
+				if (pText.first)
+				{
+					if (m_bResave)
+					{
+						if (nRowIndex >= 2)
+						{
+							m_mSharedStringsIndexNew[pText.second] = 0;
+						}
+					}
+					else
+					{
+						m_mSharedStringsIndexNew[pText.second] = 0;
+					}
+				}
+			}
+		}
+	}
+	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); /*it*/)
+	{
+		if (it->second < 0)
+		{
+			it = m_mSharedStringsIndexNew.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+	n32 nSharedStringsIndexNew = 0;
+	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); ++it)
+	{
+		it->second = nSharedStringsIndexNew++;
+	}
 }

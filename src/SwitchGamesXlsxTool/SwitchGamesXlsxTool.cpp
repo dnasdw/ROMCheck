@@ -21,6 +21,19 @@ int exportXlsx(const UString& a_sXlsxDirName, const UString& a_sTableDirName)
 	return switchGamesXlsx.Export();
 }
 
+int importXlsx(const UString& a_sXlsxDirName, const UString& a_sTableDirName)
+{
+	if (resaveXlsx(a_sXlsxDirName) != 0)
+	{
+		return 1;
+	}
+
+	CSwitchGamesXlsx switchGamesXlsx;
+	switchGamesXlsx.SetXlsxDirName(a_sXlsxDirName);
+	switchGamesXlsx.SetTableDirName(a_sTableDirName);
+	return switchGamesXlsx.Import();
+}
+
 int sortTable(const UString& a_sTableDirName)
 {
 	CSwitchGamesXlsx switchGamesXlsx;
@@ -52,6 +65,13 @@ int UMain(int argc, UChar* argv[])
 				return 1;
 			}
 			return exportXlsx(argv[2], argv[3]);
+		case USTR('I'):
+		case USTR('i'):
+			if (argc != 4)
+			{
+				return 1;
+			}
+			return importXlsx(argv[2], argv[3]);
 		case USTR('S'):
 		case USTR('s'):
 			if (argc != 3)

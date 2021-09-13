@@ -59,6 +59,7 @@ public:
 	void SetTableDirName(const UString& a_sTableDirName);
 	int Resave();
 	int Export();
+	int Import();
 	int Sort();
 private:
 	static string validateText(const string& a_sText);
@@ -87,6 +88,7 @@ private:
 	int readTable();
 	int writeTable();
 	int sortTable();
+	void updateSharedStrings();
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
 	bool m_bResave;

@@ -20,9 +20,9 @@ void CSwitchGamesXlsx::SetXlsxDirName(const UString& a_sXlsxDirName)
 	m_sXlsxDirName = a_sXlsxDirName;
 }
 
-void CSwitchGamesXlsx::SetListDirName(const UString& a_sListDirName)
+void CSwitchGamesXlsx::SetTableDirName(const UString& a_sTableDirName)
 {
-	m_sListDirName = a_sListDirName;
+	m_sTableDirName = a_sTableDirName;
 }
 
 int CSwitchGamesXlsx::Resave()
@@ -125,7 +125,28 @@ int CSwitchGamesXlsx::Export()
 	{
 		return 1;
 	}
-	if (writeList())
+	if (writeTable() != 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::Sort()
+{
+	if (readConfig() != 0)
+	{
+		return 1;
+	}
+	if (readTable() != 0)
+	{
+		return 1;
+	}
+	if (sortTable() != 0)
+	{
+		return 1;
+	}
+	if (writeTable() != 0)
 	{
 		return 1;
 	}
@@ -229,6 +250,33 @@ bool CSwitchGamesXlsx::copyFile(const UString& a_sDestFileName, const UString& a
 	fclose(fpDest);
 	fclose(fpSrc);
 	return true;
+}
+
+string CSwitchGamesXlsx::trim(const string& a_sLine)
+{
+	string sTrimmed = a_sLine;
+	string::size_type uPos = sTrimmed.find_first_not_of("\t\n\v\f\r \x85\xA0");
+	if (uPos == string::npos)
+	{
+		return "";
+	}
+	sTrimmed.erase(0, uPos);
+	uPos = sTrimmed.find_last_not_of("\t\n\v\f\r \x85\xA0");
+	if (uPos != string::npos)
+	{
+		sTrimmed.erase(uPos + 1);
+	}
+	return sTrimmed;
+}
+
+bool CSwitchGamesXlsx::empty(const string& a_sLine)
+{
+	return trim(a_sLine).empty();
+}
+
+bool CSwitchGamesXlsx::rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs)
+{
+	return lhs.second < rhs.second;
 }
 
 int CSwitchGamesXlsx::readConfig()
@@ -1865,9 +1913,159 @@ int CSwitchGamesXlsx::resaveContentTypes()
 	return 0;
 }
 
-int CSwitchGamesXlsx::writeList()
+int CSwitchGamesXlsx::readTable()
 {
-	if (!UMakeDir(m_sListDirName.c_str()))
+	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
+	{
+		const wstring& sTableName = m_vSheetName[i];
+		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
+		FILE* fp = UFopen(sTableFileName.c_str(), USTR("rb"), false);
+		if (fp == nullptr)
+		{
+			return 1;
+		}
+		fseek(fp, 0, SEEK_END);
+		u32 uTableFileSize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		char* pTemp = new char[uTableFileSize + 1];
+		fread(pTemp, 1, uTableFileSize, fp);
+		fclose(fp);
+		pTemp[uTableFileSize] = '\0';
+		string sTable = pTemp;
+		delete[] pTemp;
+		vector<string> vTable = SplitOf(sTable, "\r\n");
+		for (vector<string>::iterator it = vTable.begin(); it != vTable.end(); ++it)
+		{
+			*it = trim(*it);
+		}
+		vector<string>::iterator itTable = remove_if(vTable.begin(), vTable.end(), empty);
+		vTable.erase(itTable, vTable.end());
+		bool bReadTable = false;
+		n32 nRowIndex = 0;
+		for (vector<string>::const_iterator it = vTable.begin(); it != vTable.end(); ++it)
+		{
+			const string& sLine = *it;
+			vector<string> vLine = Split(sLine, "\t");
+			if (vLine.size() < 2)
+			{
+				if (vLine.size() != 1 || vLine[0] != "[style]")
+				{
+					return 1;
+				}
+			}
+			if (!bReadTable)
+			{
+				if (StartWith(vLine[0], "[RowCount]"))
+				{
+					sheetInfo.RowCount = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[ColumnCount]"))
+				{
+					sheetInfo.ColumnCount = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[TabSelected]"))
+				{
+					sheetInfo.TabSelected = SToN32(vLine[1]) != 0;
+					if (sheetInfo.TabSelected)
+					{
+						m_nActiveTabNew = i;
+					}
+				}
+				else if (StartWith(vLine[0], "[TopLeftCellRowIndex]"))
+				{
+					sheetInfo.TopLeftCellRowIndex = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[TopLeftCellColumnIndex]"))
+				{
+					sheetInfo.TopLeftCellColumnIndex = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[ActiveCellRowIndex]"))
+				{
+					sheetInfo.ActiveCellRowIndex = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[ActiveCellColumnIndex]"))
+				{
+					sheetInfo.ActiveCellColumnIndex = SToN32(vLine[1]);
+				}
+				else if (StartWith(vLine[0], "[Width]"))
+				{
+					for (n32 j = 0; j < static_cast<n32>(vLine.size() - 1); j++)
+					{
+						sheetInfo.Width.push_back(SToN32(vLine[j + 1]));
+					}
+				}
+				else if (StartWith(vLine[0], "[style]"))
+				{
+					if (sheetInfo.ColumnCount != sheetInfo.Width.size())
+					{
+						return 1;
+					}
+					bReadTable = true;
+				}
+				else if (StartWith(vLine[0], "["))
+				{
+					return 1;
+				}
+			}
+			else
+			{
+				if (vLine[0] == "nb")
+				{
+					mRowStyle[nRowIndex] = kStyleIdNoneNoBorder;
+				}
+				else if (vLine[0] == "no")
+				{
+					mRowStyle[nRowIndex] = kStyleIdNone;
+				}
+				else if (vLine[0] == "re")
+				{
+					mRowStyle[nRowIndex] = kStyleIdRed;
+				}
+				else if (vLine[0] == "bb")
+				{
+					mRowStyle[nRowIndex] = kStyleIdBlueBold;
+				}
+				else if (vLine[0] == "bl")
+				{
+					mRowStyle[nRowIndex] = kStyleIdBlue;
+				}
+				else if (vLine[0] == "gr")
+				{
+					mRowStyle[nRowIndex] = kStyleIdGreen;
+				}
+				else if (vLine[0] == "ye")
+				{
+					mRowStyle[nRowIndex] = kStyleIdYellow;
+				}
+				else if (vLine[0] == "go")
+				{
+					mRowStyle[nRowIndex] = kStyleIdGold;
+				}
+				map<n32, pair<bool, wstring>>& mColumnText = mRowColumnText[nRowIndex];
+				for (n32 nColumnIndex = 0; nColumnIndex < static_cast<n32>(vLine.size() - 1); nColumnIndex++)
+				{
+					if (vLine[nColumnIndex + 1].empty())
+					{
+						mColumnText[nColumnIndex] = make_pair(false, L"");
+					}
+					else
+					{
+						mColumnText[nColumnIndex] = make_pair(true, U8ToW(vLine[nColumnIndex + 1]));
+					}
+				}
+				nRowIndex++;
+			}
+		}
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::writeTable()
+{
+	if (!UMakeDir(m_sTableDirName.c_str()))
 	{
 		return 1;
 	}
@@ -1877,8 +2075,8 @@ int CSwitchGamesXlsx::writeList()
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
 		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
-		UString sListFileName = m_sListDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
-		FILE* fp = UFopen(sListFileName.c_str(), USTR("wb"), false);
+		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
+		FILE* fp = UFopen(sTableFileName.c_str(), USTR("wb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
@@ -1946,6 +2144,55 @@ int CSwitchGamesXlsx::writeList()
 			fprintf(fp, "\r\n");
 		}
 		fclose(fp);
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::sortTable()
+{
+	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
+	{
+		const wstring& sTableName = m_vSheetName[i];
+		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		vector<pair<n32, wstring>> vOrder;
+		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
+		{
+			n32 nRowIndex = itRow->first;
+			map<n32, pair<bool, wstring>>& mColumnText = mRowColumnText[nRowIndex];
+			wstring sColumnTextUpper = mColumnText[0].second;
+			transform(sColumnTextUpper.begin(), sColumnTextUpper.end(), sColumnTextUpper.begin(), ::toupper);
+			vOrder.push_back(make_pair(nRowIndex, sColumnTextUpper));
+		}
+		stable_sort(vOrder.begin() + 2, vOrder.end(), rowColumnTextCompare);
+		map<n32, n32> mRowIndexOldToNew;
+		for (n32 nRowIndexNew = 0; nRowIndexNew < static_cast<n32>(vOrder.size()); nRowIndexNew++)
+		{
+			n32 nRowIndexOld = vOrder[nRowIndexNew].first;
+			mRowIndexOldToNew[nRowIndexOld] = nRowIndexNew;
+		}
+		map<n32, n32>::iterator itRowIndex = mRowIndexOldToNew.find(sheetInfo.TopLeftCellRowIndex);
+		if (itRowIndex != mRowIndexOldToNew.end())
+		{
+			sheetInfo.TopLeftCellRowIndex = itRowIndex->second;
+		}
+		itRowIndex = mRowIndexOldToNew.find(sheetInfo.ActiveCellRowIndex);
+		if (itRowIndex != mRowIndexOldToNew.end())
+		{
+			sheetInfo.ActiveCellRowIndex = itRowIndex->second;
+		}
+		map<n32, n32> mRowStyleTemp;
+		mRowStyleTemp.swap(mRowStyle);
+		map<n32, map<n32, pair<bool, wstring>>> mRowColumnTextTemp;
+		mRowColumnTextTemp.swap(mRowColumnText);
+		for (map<n32, n32>::iterator itRowIndex = mRowIndexOldToNew.begin(); itRowIndex != mRowIndexOldToNew.end(); ++itRowIndex)
+		{
+			n32 nRowIndexOld = itRowIndex->first;
+			n32 nRowIndexNew = itRowIndex->second;
+			mRowStyle[nRowIndexNew] = mRowStyleTemp[nRowIndexOld];
+			mRowColumnText[nRowIndexNew].swap(mRowColumnTextTemp[nRowIndexOld]);
+		}
 	}
 	return 0;
 }

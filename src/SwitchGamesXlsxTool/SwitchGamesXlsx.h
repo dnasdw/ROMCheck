@@ -56,15 +56,19 @@ public:
 	CSwitchGamesXlsx();
 	~CSwitchGamesXlsx();
 	void SetXlsxDirName(const UString& a_sXlsxDirName);
-	void SetListDirName(const UString& a_sListDirName);
+	void SetTableDirName(const UString& a_sTableDirName);
 	int Resave();
 	int Export();
+	int Sort();
 private:
 	static string validateText(const string& a_sText);
 	static string validateValue(const string& a_sValue);
 	static bool travelElement(const tinyxml2::XMLElement* a_pRootElement, string& a_sXml);
 	static string encodePosition(n32 a_nRowIndex, n32 a_nColumnIndex);
 	static bool copyFile(const UString& a_sDestFileName, const UString& a_sSrcFileName);
+	static string trim(const string& a_sLine);
+	static bool empty(const string& a_sLine);
+	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
 	int readConfig();
 	int readWorkbook();
 	int readSharedStrings();
@@ -80,9 +84,11 @@ private:
 	int resaveStyles();
 	int resaveWorkbook();
 	int resaveContentTypes();
-	int writeList();
+	int readTable();
+	int writeTable();
+	int sortTable();
 	UString m_sXlsxDirName;
-	UString m_sListDirName;
+	UString m_sTableDirName;
 	bool m_bResave;
 	bool m_bCompact;
 	UString m_sModuleDirName;

@@ -147,7 +147,6 @@ int UMain(int argc, UChar* argv[])
 	vector<string>::iterator itList = remove_if(vList.begin(), vList.end(), empty);
 	vList.erase(itList, vList.end());
 	vector<SRecord> vRecord;
-	set<string> sOpgList;
 	for (vector<string>::const_iterator it = vList.begin(); it != vList.end(); ++it)
 	{
 		const string& sLine = *it;

@@ -1,6 +1,14 @@
 #include "SwitchGamesXlsx.h"
 #include <tinyxml2.h>
 
+CSwitchGamesXlsx::STextFileContent::STextFileContent()
+	: EncodingOld(kEncodingUnknown)
+	, EncodingNew(kEncodingUnknown)
+	, LineTypeOld(kLineTypeUnknown)
+	, LineTypeNew(kLineTypeUnknown)
+{
+}
+
 CSwitchGamesXlsx::CSwitchGamesXlsx()
 	: m_bResave(false)
 	, m_bCompact(false)
@@ -199,7 +207,10 @@ int CSwitchGamesXlsx::Check()
 	{
 		return 1;
 	}
-	// TODO
+	if (checkTable() != 0)
+	{
+		return 1;
+	}
 	updateSharedStrings();
 	if (writeTable() != 0)
 	{
@@ -336,7 +347,206 @@ bool CSwitchGamesXlsx::empty(const string& a_sLine)
 
 bool CSwitchGamesXlsx::rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs)
 {
-	return lhs.second < rhs.second;
+	return pathCompare(WToU(lhs.second), WToU(rhs.second));
+}
+
+bool CSwitchGamesXlsx::pathCompare(const UString& lhs, const UString& rhs)
+{
+	wstring sLhs = UToW(lhs);
+	transform(sLhs.begin(), sLhs.end(), sLhs.begin(), toupper);
+	wstring sRhs = UToW(rhs);
+	transform(sRhs.begin(), sRhs.end(), sRhs.begin(), toupper);
+	return sLhs < sRhs;
+}
+
+int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent)
+{
+	FILE* fp = UFopen(a_sFilePath.c_str(), USTR("rb"), true);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fseek(fp, 0, SEEK_END);
+	u32 uFileSize = ftell(fp);
+	if (uFileSize == 0)
+	{
+		fclose(fp);
+		UPrintf(USTR("file size == 0: %") PRIUS USTR("\n"), a_sFilePath.c_str());
+		return 1;
+	}
+	fseek(fp, 0, SEEK_SET);
+	char* pTemp = new char[uFileSize + 1];
+	fread(pTemp, 1, uFileSize, fp);
+	fclose(fp);
+	pTemp[uFileSize] = 0;
+	a_TextFileContent.TextOld = pTemp;
+	if (strlen(pTemp) != uFileSize || a_TextFileContent.TextOld.size() != uFileSize || memcmp(a_TextFileContent.TextOld.c_str(), pTemp, uFileSize) != 0)
+	{
+		delete[] pTemp;
+		UPrintf(USTR("unicode?: %") PRIUS USTR("\n"), a_sFilePath.c_str());
+		return 1;
+	}
+	delete[] pTemp;
+	bool bCP437 = false;
+	bool bUTF8 = false;
+	if (StartWith(a_TextFileContent.TextOld, "\xEF\xBB\xBF"))
+	{
+		try
+		{
+			wstring sTextW = U8ToW(a_TextFileContent.TextOld);
+			a_TextFileContent.TextNew = WToU8(sTextW);
+			if (a_TextFileContent.TextNew == a_TextFileContent.TextOld)
+			{
+				bUTF8 = true;
+				a_TextFileContent.EncodingOld = kEncodingUTF8withBOM;
+			}
+		}
+		catch (...)
+		{
+			// do nothing
+		}
+	}
+	if (!bUTF8)
+	{
+		try
+		{
+			wstring sTextW = XToW(a_TextFileContent.TextOld, 437, "CP437");
+			a_TextFileContent.TextNew = WToX(sTextW, 437, "CP437");
+			if (a_TextFileContent.TextNew == a_TextFileContent.TextOld)
+			{
+				bCP437 = true;
+				a_TextFileContent.EncodingOld = kEncodingCP437;
+			}
+		}
+		catch (...)
+		{
+			// do nothing
+		}
+	}
+	if (!bCP437 && !bUTF8)
+	{
+		try
+		{
+			wstring sTextW = U8ToW(a_TextFileContent.TextOld);
+			a_TextFileContent.TextNew = WToU8(sTextW);
+			if (a_TextFileContent.TextNew == a_TextFileContent.TextOld)
+			{
+				bUTF8 = true;
+				if (StartWith(a_TextFileContent.TextOld, "\xEF\xBB\xBF"))
+				{
+					a_TextFileContent.EncodingOld = kEncodingUTF8withBOM;
+				}
+				else
+				{
+					a_TextFileContent.EncodingOld = kEncodingUTF8;
+				}
+			}
+		}
+		catch (...)
+		{
+			// do nothing
+		}
+	}
+	if (bCP437)
+	{
+		a_TextFileContent.TextNew = a_TextFileContent.TextOld;
+		a_TextFileContent.EncodingNew = kEncodingCP437;
+	}
+	else if (bUTF8)
+	{
+		string sTextU8 = a_TextFileContent.TextOld;
+		if (a_TextFileContent.EncodingOld == kEncodingUTF8withBOM)
+		{
+			sTextU8.erase(0, 3);
+		}
+		bool bUTF8ToCP437 = false;
+		try
+		{
+			wstring sTextW = U8ToW(sTextU8);
+			string sTextX = WToX(sTextW, 437, "CP437");
+			wstring sTextXW = XToW(sTextX, 437, "CP437");
+			if (sTextXW == sTextW)
+			{
+				a_TextFileContent.TextNew = sTextX;
+				a_TextFileContent.EncodingNew = kEncodingCP437;
+				bUTF8ToCP437 = true;
+			}
+		}
+		catch (...)
+		{
+			// do nothing
+		}
+		if (!bUTF8ToCP437)
+		{
+			a_TextFileContent.TextNew = a_TextFileContent.TextOld;
+			if (a_TextFileContent.EncodingOld == kEncodingUTF8)
+			{
+				a_TextFileContent.TextNew.insert(0, "\xEF\xBB\xBF");
+			}
+			a_TextFileContent.EncodingNew = kEncodingUTF8withBOM;
+		}
+	}
+	else
+	{
+		a_TextFileContent.TextNew = a_TextFileContent.TextOld;
+	}
+	string sTextNoCRLF = Replace(a_TextFileContent.TextOld, "\r\n", "");
+	string sTextNoCR = Replace(a_TextFileContent.TextOld, "\r", "");
+	string sTextNoLF = Replace(a_TextFileContent.TextOld, "\n", "");
+	n32 nCRLFCount = (a_TextFileContent.TextOld.size() - sTextNoCRLF.size()) / 2;
+	n32 nCROnlyCount = (a_TextFileContent.TextOld.size() - sTextNoCR.size()) - nCRLFCount;
+	n32 nLFOnlyCount = (a_TextFileContent.TextOld.size() - sTextNoLF.size()) - nCRLFCount;
+	if (nCRLFCount > nLFOnlyCount)
+	{
+		if (nLFOnlyCount == 0)
+		{
+			if (nCROnlyCount == 0)
+			{
+				a_TextFileContent.LineTypeOld = kLineTypeCRLF;
+			}
+			else
+			{
+				a_TextFileContent.LineTypeOld = kLineTypeCRLF_CR;
+			}
+		}
+		else
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeCRLFMix;
+		}
+	}
+	else if (nLFOnlyCount > nCRLFCount)
+	{
+		if (nCRLFCount == 0)
+		{
+			if (nCROnlyCount == 0)
+			{
+				a_TextFileContent.LineTypeOld = kLineTypeLF;
+			}
+			else
+			{
+				a_TextFileContent.LineTypeOld = kLineTypeLF_CR;
+			}
+		}
+		else
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeLFMix;
+		}
+	}
+	if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld == kLineTypeCRLF)
+	{
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextOld, "\r\n", "\n");
+		a_TextFileContent.LineTypeNew = kLineTypeLF;
+	}
+	else if (EndWith(a_sFilePath, USTR(".sfv")) && a_TextFileContent.LineTypeOld == kLineTypeLF)
+	{
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextOld, "\n", "\r\n");
+		a_TextFileContent.LineTypeNew = kLineTypeCRLF;
+	}
+	else
+	{
+		a_TextFileContent.LineTypeNew = a_TextFileContent.LineTypeOld;
+	}
+	return 0;
 }
 
 int CSwitchGamesXlsx::readConfig()
@@ -2213,6 +2423,282 @@ int CSwitchGamesXlsx::sortTable()
 			n32 nRowIndexNew = itRowIndex->second;
 			mRowStyle[nRowIndexNew] = mRowStyleTemp[nRowIndexOld];
 			mRowColumnText[nRowIndexNew].swap(mRowColumnTextTemp[nRowIndexOld]);
+		}
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::checkTable()
+{
+	n32 nCheckIndex = 1;
+	for (vector<SResult>::iterator itResult = m_vResult.begin(); itResult != m_vResult.end(); ++itResult)
+	{
+		UPrintf(USTR("\t%d/%d:\n"), nCheckIndex, static_cast<n32>(m_vResult.size()));
+		nCheckIndex++;
+		SResult& result = *itResult;
+		const wstring& sName = result.Name;
+		UPrintf(USTR("\t\t%") PRIUS USTR("  %4d  %") PRIUS USTR("\n"), (result.Exist ? USTR("[v]     ") : USTR("    [x] ")), result.Year, WToU(sName).c_str());
+		if (!result.Exist)
+		{
+			continue;
+		}
+		UString sPath = WToU(result.Path);
+		const wstring& sType = result.Type;
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sType];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sType];
+		n32 nRowIndex = -1;
+		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
+		{
+			map<n32, pair<bool, wstring>>& mColumnText = itRow->second;
+			if (mColumnText[0].first && mColumnText[0].second == sName)
+			{
+				nRowIndex = itRow->first;
+				break;
+			}
+		}
+		if (nRowIndex < 0)
+		{
+			UPrintf(USTR("NOT in table: %") PRIUS USTR("\n"), sPath.c_str());
+			continue;
+		}
+		UString::size_type uPrefixSize = sPath.size() + 1;
+		vector<UString> vFile;
+		queue<UString> qDir;
+		qDir.push(sPath);
+		while (!qDir.empty())
+		{
+			UString& sParent = qDir.front();
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+			WIN32_FIND_DATAW ffd;
+			HANDLE hFind = INVALID_HANDLE_VALUE;
+			wstring sPattern = sParent + L"/*";
+			hFind = FindFirstFileW(sPattern.c_str(), &ffd);
+			if (hFind != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+					{
+						wstring sFileName = sParent + L"/" + ffd.cFileName;
+						vFile.push_back(sFileName.substr(uPrefixSize));
+					}
+					else if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 && wcscmp(ffd.cFileName, L".") != 0 && wcscmp(ffd.cFileName, L"..") != 0)
+					{
+						wstring sDir = sParent + L"/" + ffd.cFileName;
+						qDir.push(sDir);
+					}
+				} while (FindNextFileW(hFind, &ffd) != 0);
+				FindClose(hFind);
+			}
+#else
+			DIR* pDir = opendir(sParent.c_str());
+			if (pDir != nullptr)
+			{
+				dirent* pDirent = nullptr;
+				while ((pDirent = readdir(pDir)) != nullptr)
+				{
+					string sName = pDirent->d_name;
+#if SDW_PLATFORM == SDW_PLATFORM_MACOS
+					sName = TSToS<string, string>(sName, "UTF-8-MAC", "UTF-8");
+#endif
+					// handle cases where d_type is DT_UNKNOWN
+					if (pDirent->d_type == DT_UNKNOWN)
+					{
+						string sPath = sParent + "/" + sName;
+						Stat st;
+						if (UStat(sPath.c_str(), &st) == 0)
+						{
+							if (S_ISREG(st.st_mode))
+							{
+								pDirent->d_type = DT_REG;
+							}
+							else if (S_ISDIR(st.st_mode))
+							{
+								pDirent->d_type = DT_DIR;
+							}
+						}
+					}
+					if (pDirent->d_type == DT_REG)
+					{
+						string sFileName = sParent + "/" + pDirent->d_name;
+						vFile.push_back(sFileName.substr(uPrefixSize));
+					}
+					else if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
+					{
+						string sDir = sParent + "/" + pDirent->d_name;
+						qDir.push(sDir);
+					}
+				}
+				closedir(pDir);
+			}
+#endif
+			qDir.pop();
+		}
+		sort(vFile.begin(), vFile.end(), pathCompare);
+		for (vector<UString>::iterator itFile = vFile.begin(); itFile != vFile.end(); ++itFile)
+		{
+			UString& sFile = *itFile;
+			UString::size_type uPos = sFile.rfind(USTR('.'));
+			if (uPos == UString::npos)
+			{
+				result.OtherFile.push_back(sFile);
+				continue;
+			}
+			UString sExtName = sFile.substr(uPos + 1);
+			if (sExtName == USTR("rar"))
+			{
+				result.RarFile[sFile] = 0;
+			}
+			if (sExtName == USTR("nfo"))
+			{
+				result.NfoFile.push_back(sFile);
+			}
+			else if (sExtName == USTR("sfv"))
+			{
+				result.SfvFile.push_back(sFile);
+			}
+			else
+			{
+				if (sExtName.size() == 3)
+				{
+					if (sExtName[0] >= USTR('r') && sExtName[0] < USTR('|') && sExtName[1] >= USTR('0') && sExtName[1] <= USTR('9') && sExtName[2] >= USTR('0') && sExtName[2] <= USTR('9'))
+					{
+						result.RarFile[sFile] = 0;
+					}
+				}
+				else
+				{
+					result.OtherFile.push_back(sFile);
+				}
+			}
+		}
+		if (result.NfoFile.size() > 1)
+		{
+			UPrintf(USTR("nfo COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.NfoFile.size()), sPath.c_str());
+			for (n32 i = 0; i < static_cast<n32>(result.NfoFile.size()); i++)
+			{
+				UPrintf(USTR("nfo[%d]: %") PRIUS USTR("\n"), i, result.NfoFile[i].c_str());
+			}
+			mRowStyle[nRowIndex] = kStyleIdRed;
+		}
+		if (result.SfvFile.size() > 1)
+		{
+			UPrintf(USTR("sfv COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.SfvFile.size()), sPath.c_str());
+			for (n32 i = 0; i < static_cast<n32>(result.SfvFile.size()); i++)
+			{
+				UPrintf(USTR("sfv[%d]: %") PRIUS USTR("\n"), i, result.SfvFile[i].c_str());
+			}
+			mRowStyle[nRowIndex] = kStyleIdRed;
+		}
+		if (result.OtherFile.size() > 1)
+		{
+			UPrintf(USTR("other COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.OtherFile.size()), sPath.c_str());
+			for (n32 i = 0; i < static_cast<n32>(result.OtherFile.size()); i++)
+			{
+				UPrintf(USTR("other[%d]: %") PRIUS USTR("\n"), i, result.OtherFile[i].c_str());
+			}
+			mRowStyle[nRowIndex] = kStyleIdRed;
+		}
+		wstring sComment;
+		if (!result.NfoFile.empty())
+		{
+			UString sFilePath = sPath + USTR("/") + result.NfoFile[0];
+			STextFileContent textFileContent;
+			if (readTextFile(sFilePath, textFileContent))
+			{
+				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
+				mRowStyle[nRowIndex] = kStyleIdRed;
+				continue;
+			}
+			if (textFileContent.EncodingNew != textFileContent.EncodingOld)
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+			if (textFileContent.LineTypeOld == kLineTypeLF)
+			{
+				sComment += L"/nfo LF";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else if (textFileContent.LineTypeOld == kLineTypeLF_CR)
+			{
+				sComment += L"/nfo LF|CR";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else if (textFileContent.LineTypeOld == kLineTypeCRLF)
+			{
+				sComment += L"/nfo CRLF";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+		}
+		if (!result.SfvFile.empty())
+		{
+			UString sFilePath = sPath + USTR("/") + result.SfvFile[0];
+			STextFileContent textFileContent;
+			if (readTextFile(sFilePath, textFileContent))
+			{
+				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
+				mRowStyle[nRowIndex] = kStyleIdRed;
+				continue;
+			}
+			if (textFileContent.EncodingNew != textFileContent.EncodingOld)
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+			if (textFileContent.LineTypeOld == kLineTypeLF)
+			{
+				sComment += L"/sfv LF";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else if (textFileContent.LineTypeOld == kLineTypeLF_CR)
+			{
+				sComment += L"/sfv LF|CR";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else if (textFileContent.LineTypeOld == kLineTypeCRLF)
+			{
+				sComment += L"/sfv CRLF";
+				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				{
+					sComment += L" with BOM";
+				}
+			}
+			else
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+		}
+		if (!sComment.empty())
+		{
+			sComment.erase(0, 1);
+		}
+		if (sComment.empty() || StartWith(mRowColumnText[nRowIndex][2].second, sComment))
+		{
+			mRowColumnText[nRowIndex][2].second = sComment;
+		}
+		else
+		{
+			UPrintf(USTR("comment NOT same: %") PRIUS USTR("\n"), sPath.c_str());
+			mRowStyle[nRowIndex] = kStyleIdRed;
+			continue;
 		}
 	}
 	return 0;

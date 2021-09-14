@@ -32,6 +32,23 @@ public:
 		kStyleIdYellow = 6,
 		kStyleIdGold = 7
 	};
+	enum EEncoding
+	{
+		kEncodingUnknown,
+		kEncodingCP437,
+		kEncodingUTF8,
+		kEncodingUTF8withBOM
+	};
+	enum ELineType
+	{
+		kLineTypeUnknown,
+		kLineTypeLF,
+		kLineTypeLF_CR,
+		kLineTypeLFMix,
+		kLineTypeCRLF,
+		kLineTypeCRLF_CR,
+		kLineTypeCRLFMix
+	};
 	struct SSheetInfo
 	{
 		n32 RowCount;
@@ -60,6 +77,20 @@ public:
 		wstring Path;
 		bool Exist;
 		wstring Type;
+		map<UString, u32> RarFile;
+		vector<UString> NfoFile;
+		vector<UString> SfvFile;
+		vector<UString> OtherFile;
+	};
+	struct STextFileContent
+	{
+		string TextOld;
+		string TextNew;
+		EEncoding EncodingOld;
+		EEncoding EncodingNew;
+		ELineType LineTypeOld;
+		ELineType LineTypeNew;
+		STextFileContent();
 	};
 	CSwitchGamesXlsx();
 	~CSwitchGamesXlsx();
@@ -81,6 +112,8 @@ private:
 	static wstring trim(const wstring& a_sLine);
 	static bool empty(const string& a_sLine);
 	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
+	static bool pathCompare(const UString& lhs, const UString& rhs);
+	static int readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent);
 	int readConfig();
 	int readWorkbook();
 	int readSharedStrings();
@@ -99,6 +132,7 @@ private:
 	int readTable();
 	int writeTable();
 	int sortTable();
+	int checkTable();
 	int readResult();
 	void updateSharedStrings();
 	UString m_sXlsxDirName;

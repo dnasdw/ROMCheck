@@ -41,6 +41,14 @@ int sortTable(const UString& a_sTableDirName)
 	return switchGamesXlsx.Sort();
 }
 
+int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName)
+{
+	CSwitchGamesXlsx switchGamesXlsx;
+	switchGamesXlsx.SetTableDirName(a_sTableDirName);
+	switchGamesXlsx.SetResultFileName(a_sResultFileName);
+	return switchGamesXlsx.Check();
+}
+
 int UMain(int argc, UChar* argv[])
 {
 	if (argc < 3)
@@ -79,6 +87,13 @@ int UMain(int argc, UChar* argv[])
 				return 1;
 			}
 			return sortTable(argv[2]);
+		case USTR('C'):
+		case USTR('c'):
+			if (argc != 4)
+			{
+				return 1;
+			}
+			return checkTable(argv[2], argv[3]);
 		default:
 			break;
 		}

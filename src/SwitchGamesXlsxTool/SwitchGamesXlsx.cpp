@@ -25,6 +25,11 @@ void CSwitchGamesXlsx::SetTableDirName(const UString& a_sTableDirName)
 	m_sTableDirName = a_sTableDirName;
 }
 
+void CSwitchGamesXlsx::SetResultFileName(const UString& a_sResultFileName)
+{
+	m_sResultFileName = a_sResultFileName;
+}
+
 int CSwitchGamesXlsx::Resave()
 {
 	m_bResave = true;
@@ -180,6 +185,29 @@ int CSwitchGamesXlsx::Sort()
 	return 0;
 }
 
+int CSwitchGamesXlsx::Check()
+{
+	if (readConfig() != 0)
+	{
+		return 1;
+	}
+	if (readTable() != 0)
+	{
+		return 1;
+	}
+	if (readResult() != 0)
+	{
+		return 1;
+	}
+	// TODO
+	updateSharedStrings();
+	if (writeTable() != 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 string CSwitchGamesXlsx::validateText(const string& a_sText)
 {
 	string sText = Replace(a_sText, '&', "&amp;");
@@ -281,15 +309,20 @@ bool CSwitchGamesXlsx::copyFile(const UString& a_sDestFileName, const UString& a
 
 string CSwitchGamesXlsx::trim(const string& a_sLine)
 {
-	string sTrimmed = a_sLine;
-	string::size_type uPos = sTrimmed.find_first_not_of("\t\n\v\f\r \x85\xA0");
-	if (uPos == string::npos)
+	return WToU8(trim(U8ToW(a_sLine)));
+}
+
+wstring CSwitchGamesXlsx::trim(const wstring& a_sLine)
+{
+	wstring sTrimmed = a_sLine;
+	wstring::size_type uPos = sTrimmed.find_first_not_of(L"\n\v\f\r \x85\xA0");
+	if (uPos == wstring::npos)
 	{
-		return "";
+		return L"";
 	}
 	sTrimmed.erase(0, uPos);
-	uPos = sTrimmed.find_last_not_of("\t\n\v\f\r \x85\xA0");
-	if (uPos != string::npos)
+	uPos = sTrimmed.find_last_not_of(L"\n\v\f\r \x85\xA0");
+	if (uPos != wstring::npos)
 	{
 		sTrimmed.erase(uPos + 1);
 	}
@@ -1187,7 +1220,7 @@ int CSwitchGamesXlsx::readSheet()
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
 		sheetInfo.TabSelected = i == m_nActiveTabNew;
-		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		n32 nSheetIndex = i + 1;
 		if (m_bResave)
 		{
@@ -1620,7 +1653,7 @@ int CSwitchGamesXlsx::readSheet()
 		{
 			wstring& sTableName = *it;
 			SSheetInfo& sheetInfo = mSheetInfo[sTableName];
-			map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+			map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 			mRowStyle[0] = kStyleIdBlueBold;
 			mRowStyle[1] = kStyleIdBlue;
 			map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
@@ -1631,21 +1664,9 @@ int CSwitchGamesXlsx::readSheet()
 			mRowColumnText[1][0] = make_pair(true, L"..");
 			mRowColumnText[1][1] = make_pair(true, L"..");
 			mRowColumnText[1][2] = make_pair(true, L"nfo LF/sfv CRLF");
-			mRowColumnText[1][3] = make_pair(false, L"");
+			mRowColumnText[1].erase(3);
 			sheetInfo.RowCount = max<n32>(2, sheetInfo.RowCount);
 			sheetInfo.ColumnCount = max<n32>(4, sheetInfo.ColumnCount);
-			for (n32 nRowIndex = 0; nRowIndex < 2; nRowIndex++)
-			{
-				for (n32 nColumnIndex = 0; nColumnIndex < 4; nColumnIndex++)
-				{
-					wstring& sStmtW = mRowColumnText[nRowIndex][nColumnIndex].second;
-					if (static_cast<n32>(sStmtW.size()) > sheetInfo.Width[nColumnIndex])
-					{
-						sheetInfo.Width[nColumnIndex] = static_cast<n32>(sStmtW.size());
-					}
-				}
-			}
-			mRowColumnText[1].erase(3);
 		}
 	}
 	return 0;
@@ -1658,7 +1679,7 @@ int CSwitchGamesXlsx::writeSheet()
 	{
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
-		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
 		string sSheetXml;
 		sSheetXml += "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n";
@@ -1919,7 +1940,7 @@ int CSwitchGamesXlsx::readTable()
 	{
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
-		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
 		FILE* fp = UFopen(sTableFileName.c_str(), USTR("rb"), false);
@@ -1933,7 +1954,7 @@ int CSwitchGamesXlsx::readTable()
 		char* pTemp = new char[uTableFileSize + 1];
 		fread(pTemp, 1, uTableFileSize, fp);
 		fclose(fp);
-		pTemp[uTableFileSize] = '\0';
+		pTemp[uTableFileSize] = 0;
 		string sTable = pTemp;
 		delete[] pTemp;
 		vector<string> vTable = SplitOf(sTable, "\r\n");
@@ -2073,7 +2094,7 @@ int CSwitchGamesXlsx::writeTable()
 	{
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
-		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
 		FILE* fp = UFopen(sTableFileName.c_str(), USTR("wb"), false);
@@ -2154,7 +2175,7 @@ int CSwitchGamesXlsx::sortTable()
 	{
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
-		map<n32, n32>& mRowStyle = mTableRowStyle[sTableName];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
 		vector<pair<n32, wstring>> vOrder;
 		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
@@ -2197,12 +2218,82 @@ int CSwitchGamesXlsx::sortTable()
 	return 0;
 }
 
+int CSwitchGamesXlsx::readResult()
+{
+	FILE* fp = UFopen(m_sResultFileName.c_str(), USTR("rb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fseek(fp, 0, SEEK_END);
+	u32 uResultFileSize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	char* pTemp = new char[uResultFileSize + 1];
+	fread(pTemp, 1, uResultFileSize, fp);
+	fclose(fp);
+	pTemp[uResultFileSize] = 0;
+	string sResultText = pTemp;
+	delete[] pTemp;
+	vector<string> vResultText = SplitOf(sResultText, "\r\n");
+	for (vector<string>::iterator it = vResultText.begin(); it != vResultText.end(); ++it)
+	{
+		*it = trim(*it);
+	}
+	vector<string>::iterator itResultText = remove_if(vResultText.begin(), vResultText.end(), empty);
+	vResultText.erase(itResultText, vResultText.end());
+	if (!vResultText.empty())
+	{
+		if (vResultText[0] == "[yes]\t[no]\t[year]\t[name]\t[path]")
+		{
+			vResultText.erase(vResultText.begin());
+		}
+	}
+	for (itResultText = vResultText.begin(); itResultText != vResultText.end(); ++itResultText)
+	{
+		wstring sLine = U8ToW(*itResultText);
+		vector<wstring> vLine = Split(sLine, L"\t");
+		if (vLine.size() != 5)
+		{
+			return 1;
+		}
+		SResult result;
+		if (vLine[0] == L"[v]" && trim(vLine[1]).empty())
+		{
+			result.Exist = true;
+		}
+		else if (vLine[1] == L"[x]" && trim(vLine[0]).empty())
+		{
+			result.Exist = false;
+		}
+		else
+		{
+			return 1;
+		}
+		result.Year = SToN32(vLine[2]);
+		result.Name = vLine[3];
+		result.Path = vLine[4];
+		if (!result.Path.empty())
+		{
+			result.Type = result.Path.substr(0, result.Path.size() - result.Name.size() - 1);
+			wstring::size_type uPos = result.Type.find_last_of(L"/\\");
+			if (uPos != wstring::npos)
+			{
+				result.Type.erase(0, uPos + 1);
+			}
+		}
+		m_vResult.push_back(result);
+	}
+	return 0;
+}
+
 void CSwitchGamesXlsx::updateSharedStrings()
 {
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
 		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		sheetInfo.Width.clear();
+		sheetInfo.Width.resize(sheetInfo.ColumnCount, 9);
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
 		for (n32 nRowIndex = 0; nRowIndex < sheetInfo.RowCount; nRowIndex++)
 		{
@@ -2212,16 +2303,21 @@ void CSwitchGamesXlsx::updateSharedStrings()
 				pair<bool, wstring>& pText = mColumnText[nColumnIndex];
 				if (pText.first)
 				{
+					wstring& sText = pText.second;
+					if (static_cast<n32>(sText.size()) > sheetInfo.Width[nColumnIndex])
+					{
+						sheetInfo.Width[nColumnIndex] = static_cast<n32>(sText.size());
+					}
 					if (m_bResave)
 					{
 						if (nRowIndex >= 2)
 						{
-							m_mSharedStringsIndexNew[pText.second] = 0;
+							m_mSharedStringsIndexNew[sText] = 0;
 						}
 					}
 					else
 					{
-						m_mSharedStringsIndexNew[pText.second] = 0;
+						m_mSharedStringsIndexNew[sText] = 0;
 					}
 				}
 			}

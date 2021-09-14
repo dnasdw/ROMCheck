@@ -17,7 +17,7 @@ int UMain(int argc, UChar* argv[])
 	char* pTemp = new char[uFileSize + 1];
 	fread(pTemp, 1, uFileSize, fp);
 	fclose(fp);
-	pTemp[uFileSize] = '\0';
+	pTemp[uFileSize] = 0;
 	string sHtml = pTemp;
 	delete[] pTemp;
 	vector<string> vLine = RegexSplitWith(sHtml, "<div class=\"post\" id=\"");

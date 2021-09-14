@@ -53,14 +53,24 @@ public:
 		{
 		}
 	};
+	struct SResult
+	{
+		n32 Year;
+		wstring Name;
+		wstring Path;
+		bool Exist;
+		wstring Type;
+	};
 	CSwitchGamesXlsx();
 	~CSwitchGamesXlsx();
 	void SetXlsxDirName(const UString& a_sXlsxDirName);
 	void SetTableDirName(const UString& a_sTableDirName);
+	void SetResultFileName(const UString& a_sResultFileName);
 	int Resave();
 	int Export();
 	int Import();
 	int Sort();
+	int Check();
 private:
 	static string validateText(const string& a_sText);
 	static string validateValue(const string& a_sValue);
@@ -68,6 +78,7 @@ private:
 	static string encodePosition(n32 a_nRowIndex, n32 a_nColumnIndex);
 	static bool copyFile(const UString& a_sDestFileName, const UString& a_sSrcFileName);
 	static string trim(const string& a_sLine);
+	static wstring trim(const wstring& a_sLine);
 	static bool empty(const string& a_sLine);
 	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
 	int readConfig();
@@ -88,9 +99,11 @@ private:
 	int readTable();
 	int writeTable();
 	int sortTable();
+	int readResult();
 	void updateSharedStrings();
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
+	UString m_sResultFileName;
 	bool m_bResave;
 	bool m_bCompact;
 	UString m_sModuleDirName;
@@ -107,8 +120,9 @@ private:
 	map<wstring, n32> m_mSharedStringsIndexNew;
 	map<n32, n32> m_mStyleOldToNew;
 	map<wstring, SSheetInfo> mSheetInfo;
-	map<wstring, map<n32, n32>> mTableRowStyle;
+	map<wstring, map<n32, n32>> m_mTableRowStyle;
 	map<wstring, map<n32, map<n32, pair<bool, wstring>>>> mTableRowColumnText;
+	vector<SResult> m_vResult;
 };
 
 #endif	// SWITCH_GAMES_XLSX_H_

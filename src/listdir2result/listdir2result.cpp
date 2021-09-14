@@ -10,19 +10,19 @@ struct SRecord
 
 string trim(const string& a_sLine)
 {
-	string sTrimmed = a_sLine;
-	string::size_type uPos = sTrimmed.find_first_not_of("\t\n\v\f\r \x85\xA0");
-	if (uPos == string::npos)
+	wstring sTrimmed = U8ToW(a_sLine);
+	wstring::size_type uPos = sTrimmed.find_first_not_of(L"\n\v\f\r \x85\xA0");
+	if (uPos == wstring::npos)
 	{
 		return "";
 	}
 	sTrimmed.erase(0, uPos);
-	uPos = sTrimmed.find_last_not_of("\t\n\v\f\r \x85\xA0");
-	if (uPos != string::npos)
+	uPos = sTrimmed.find_last_not_of(L"\n\v\f\r \x85\xA0");
+	if (uPos != wstring::npos)
 	{
 		sTrimmed.erase(uPos + 1);
 	}
-	return sTrimmed;
+	return WToU8(sTrimmed);
 }
 
 bool empty(const string& a_sLine)
@@ -136,7 +136,7 @@ int UMain(int argc, UChar* argv[])
 	char* pTemp = new char[uFileSize + 1];
 	fread(pTemp, 1, uFileSize, fp);
 	fclose(fp);
-	pTemp[uFileSize] = '\0';
+	pTemp[uFileSize] = 0;
 	string sList = pTemp;
 	delete[] pTemp;
 	vector<string> vList = SplitOf(sList, "\r\n");

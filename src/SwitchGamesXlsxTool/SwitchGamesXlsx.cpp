@@ -496,7 +496,18 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 	n32 nCRLFCount = (a_TextFileContent.TextOld.size() - sTextNoCRLF.size()) / 2;
 	n32 nCROnlyCount = (a_TextFileContent.TextOld.size() - sTextNoCR.size()) - nCRLFCount;
 	n32 nLFOnlyCount = (a_TextFileContent.TextOld.size() - sTextNoLF.size()) - nCRLFCount;
-	if (nCRLFCount > nLFOnlyCount)
+	if (nCROnlyCount > nCRLFCount && nCROnlyCount > nLFOnlyCount)
+	{
+		if (nCRLFCount == 0 && nLFOnlyCount == 0)
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeCR;
+		}
+		else
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeCRMix;
+		}
+	}
+	else if (nCRLFCount > nLFOnlyCount)
 	{
 		if (nLFOnlyCount == 0)
 		{
@@ -532,14 +543,25 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 			a_TextFileContent.LineTypeOld = kLineTypeLFMix;
 		}
 	}
-	if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld == kLineTypeCRLF)
+	if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld != kLineTypeUnknown && nCROnlyCount == 0)
 	{
-		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextOld, "\r\n", "\n");
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\r", "");
 		a_TextFileContent.LineTypeNew = kLineTypeLF;
 	}
-	else if (EndWith(a_sFilePath, USTR(".sfv")) && a_TextFileContent.LineTypeOld == kLineTypeLF)
+	else if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld == kLineTypeCR)
 	{
-		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextOld, "\n", "\r\n");
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\r", "\n");
+		a_TextFileContent.LineTypeNew = kLineTypeLF;
+	}
+	else if (EndWith(a_sFilePath, USTR(".sfv")) && a_TextFileContent.LineTypeOld != kLineTypeUnknown && nCROnlyCount == 0)
+	{
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\r", "");
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\n", "\r\n");
+		a_TextFileContent.LineTypeNew = kLineTypeCRLF;
+	}
+	else if (EndWith(a_sFilePath, USTR(".sfv")) && a_TextFileContent.LineTypeOld == kLineTypeCR)
+	{
+		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\r", "\r\n");
 		a_TextFileContent.LineTypeNew = kLineTypeCRLF;
 	}
 	else

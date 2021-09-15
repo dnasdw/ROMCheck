@@ -47,7 +47,9 @@ public:
 		kLineTypeLFMix,
 		kLineTypeCRLF,
 		kLineTypeCRLF_CR,
-		kLineTypeCRLFMix
+		kLineTypeCRLFMix,
+		kLineTypeCR,
+		kLineTypeCRMix
 	};
 	struct SSheetInfo
 	{

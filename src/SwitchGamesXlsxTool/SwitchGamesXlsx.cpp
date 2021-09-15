@@ -549,6 +549,90 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 	return 0;
 }
 
+bool CSwitchGamesXlsx::makeDir(const UString& a_sDirPath)
+{
+	UString sDirPath = a_sDirPath;
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
+	wchar_t* pDirPath = new wchar_t[uMaxPath];
+	if (_wfullpath(pDirPath, sDirPath.c_str(), uMaxPath) == nullptr)
+	{
+		return false;
+	}
+	sDirPath = WToU(pDirPath);
+	delete[] pDirPath;
+	if (!StartWith(sDirPath, USTR("\\\\")))
+	{
+		sDirPath = USTR("\\\\?\\") + sDirPath;
+	}
+#endif
+	UString sPrefix;
+	if (StartWith(sDirPath, USTR("\\\\?\\")))
+	{
+		sPrefix = USTR("\\\\?\\");
+		sDirPath.erase(0, 4);
+	}
+	else if (StartWith(sDirPath, USTR("\\\\")))
+	{
+		sPrefix = USTR("\\\\");
+		sDirPath.erase(0, 2);
+	}
+	vector<UString> vDirPath = SplitOf(sDirPath, USTR("/\\"));
+	UString sDirName = sPrefix;
+	UString sSep = sPrefix.empty() ? USTR("/") : USTR("\\");
+	for (n32 i = 0; i < static_cast<n32>(vDirPath.size()); i++)
+	{
+		sDirName += vDirPath[i];
+		if (!sPrefix.empty() && i < 1)
+		{
+			// do nothing
+		}
+		else if (!UMakeDir(sDirName.c_str()))
+		{
+			return false;
+		}
+		sDirName += sSep;
+	}
+	return true;
+}
+
+int CSwitchGamesXlsx::writeFileString(const UString& a_sFilePath, const string& a_sStringContent)
+{
+	UString sFilePath = a_sFilePath;
+	UString sDirPath = USTR(".");
+	UString::size_type uPos = a_sFilePath.find_last_of(USTR("/\\"));
+	if (uPos != UString::npos)
+	{
+		sDirPath = a_sFilePath.substr(0, uPos);
+	}
+	if (!makeDir(sDirPath))
+	{
+		return 1;
+	}
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
+	wchar_t* pFilePath = new wchar_t[uMaxPath];
+	if (_wfullpath(pFilePath, a_sFilePath.c_str(), uMaxPath) == nullptr)
+	{
+		return 1;
+	}
+	sFilePath = pFilePath;
+	delete[] pFilePath;
+	if (!StartWith(sFilePath, USTR("\\\\")))
+	{
+		sFilePath = USTR("\\\\?\\") + sFilePath;
+	}
+#endif
+	FILE* fp = UFopen(sFilePath.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fwrite(a_sStringContent.c_str(), 1, a_sStringContent.size(), fp);
+	fclose(fp);
+	return 0;
+}
+
 int CSwitchGamesXlsx::readConfig()
 {
 	UString sConfigXmlPath = m_sModuleDirName + USTR("/Switch Games.xml");
@@ -2296,7 +2380,7 @@ int CSwitchGamesXlsx::readTable()
 
 int CSwitchGamesXlsx::writeTable()
 {
-	if (!UMakeDir(m_sTableDirName.c_str()))
+	if (!makeDir(m_sTableDirName.c_str()))
 	{
 		return 1;
 	}
@@ -2433,11 +2517,10 @@ int CSwitchGamesXlsx::checkTable()
 	n32 nCheckIndex = 1;
 	for (vector<SResult>::iterator itResult = m_vResult.begin(); itResult != m_vResult.end(); ++itResult)
 	{
-		UPrintf(USTR("\t%d/%d:\n"), nCheckIndex, static_cast<n32>(m_vResult.size()));
-		nCheckIndex++;
 		SResult& result = *itResult;
 		const wstring& sName = result.Name;
-		UPrintf(USTR("\t\t%") PRIUS USTR("  %4d  %") PRIUS USTR("\n"), (result.Exist ? USTR("[v]     ") : USTR("    [x] ")), result.Year, WToU(sName).c_str());
+		UPrintf(USTR("\t%5d/%5d\t%") PRIUS USTR(" %4d %") PRIUS USTR("\n"), nCheckIndex, static_cast<n32>(m_vResult.size()), (result.Exist ? USTR("[v]     ") : USTR("    [x] ")), result.Year, WToU(sName).c_str());
+		nCheckIndex++;
 		if (!result.Exist)
 		{
 			continue;
@@ -2458,7 +2541,7 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (nRowIndex < 0)
 		{
-			UPrintf(USTR("NOT in table: %") PRIUS USTR("\n"), sPath.c_str());
+			UPrintf(USTR("NOT in table %") PRIUS USTR(": %") PRIUS USTR("\n"), WToU(sType).c_str(), sPath.c_str());
 			continue;
 		}
 		UString::size_type uPrefixSize = sPath.size() + 1;
@@ -2599,7 +2682,9 @@ int CSwitchGamesXlsx::checkTable()
 			}
 			mRowStyle[nRowIndex] = kStyleIdRed;
 		}
-		wstring sComment;
+		wstring sCommentOld = mRowColumnText[nRowIndex][2].second;
+		wstring sCommentNew;
+		UString sPatchDirName = m_sTableDirName + USTR("/") + WToU(sType + L"/" + sName);
 		if (!result.NfoFile.empty())
 		{
 			UString sFilePath = sPath + USTR("/") + result.NfoFile[0];
@@ -2610,37 +2695,42 @@ int CSwitchGamesXlsx::checkTable()
 				mRowStyle[nRowIndex] = kStyleIdRed;
 				continue;
 			}
-			if (textFileContent.EncodingNew != textFileContent.EncodingOld)
+			if (textFileContent.LineTypeNew == kLineTypeLF)
 			{
-				mRowStyle[nRowIndex] = kStyleIdRed;
-			}
-			if (textFileContent.LineTypeOld == kLineTypeLF)
-			{
-				sComment += L"/nfo LF";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/nfo LF";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
-			else if (textFileContent.LineTypeOld == kLineTypeLF_CR)
+			else if (textFileContent.LineTypeNew == kLineTypeLF_CR)
 			{
-				sComment += L"/nfo LF|CR";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/nfo LF|CR";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
-			else if (textFileContent.LineTypeOld == kLineTypeCRLF)
+			else if (textFileContent.LineTypeNew == kLineTypeCRLF)
 			{
-				sComment += L"/nfo CRLF";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/nfo CRLF";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
 			else
 			{
+				sCommentNew += L"/nfo MIX";
 				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+			if (textFileContent.TextNew != textFileContent.TextOld || textFileContent.EncodingNew != textFileContent.EncodingOld || textFileContent.LineTypeNew != textFileContent.LineTypeOld)
+			{
+				UString sPatchFileName = sPatchDirName + USTR("/") + result.NfoFile[0];
+				if (writeFileString(sPatchFileName, textFileContent.TextNew) != 0)
+				{
+					return 1;
+				}
 			}
 		}
 		if (!result.SfvFile.empty())
@@ -2653,53 +2743,49 @@ int CSwitchGamesXlsx::checkTable()
 				mRowStyle[nRowIndex] = kStyleIdRed;
 				continue;
 			}
-			if (textFileContent.EncodingNew != textFileContent.EncodingOld)
+			if (textFileContent.LineTypeNew == kLineTypeLF)
 			{
-				mRowStyle[nRowIndex] = kStyleIdRed;
-			}
-			if (textFileContent.LineTypeOld == kLineTypeLF)
-			{
-				sComment += L"/sfv LF";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/sfv LF";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
-			else if (textFileContent.LineTypeOld == kLineTypeLF_CR)
+			else if (textFileContent.LineTypeNew == kLineTypeLF_CR)
 			{
-				sComment += L"/sfv LF|CR";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/sfv LF|CR";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
-			else if (textFileContent.LineTypeOld == kLineTypeCRLF)
+			else if (textFileContent.LineTypeNew == kLineTypeCRLF)
 			{
-				sComment += L"/sfv CRLF";
-				if (textFileContent.EncodingOld == kEncodingUTF8withBOM)
+				sCommentNew += L"/sfv CRLF";
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
-					sComment += L" with BOM";
+					sCommentNew += L" with BOM";
 				}
 			}
 			else
 			{
+				sCommentNew += L"/sfv MIX";
 				mRowStyle[nRowIndex] = kStyleIdRed;
 			}
+			if (textFileContent.TextNew != textFileContent.TextOld || textFileContent.EncodingNew != textFileContent.EncodingOld || textFileContent.LineTypeNew != textFileContent.LineTypeOld)
+			{
+				UString sPatchFileName = sPatchDirName + USTR("/") + result.SfvFile[0];
+				if (writeFileString(sPatchFileName, textFileContent.TextNew) != 0)
+				{
+					return 1;
+				}
+			}
 		}
-		if (!sComment.empty())
+		if (!sCommentNew.empty())
 		{
-			sComment.erase(0, 1);
+			sCommentNew.erase(0, 1);
 		}
-		if (sComment.empty() || StartWith(mRowColumnText[nRowIndex][2].second, sComment))
-		{
-			mRowColumnText[nRowIndex][2].second = sComment;
-		}
-		else
-		{
-			UPrintf(USTR("comment NOT same: %") PRIUS USTR("\n"), sPath.c_str());
-			mRowStyle[nRowIndex] = kStyleIdRed;
-			continue;
-		}
+		mRowColumnText[nRowIndex][2].second = sCommentNew;
 	}
 	return 0;
 }
@@ -2721,9 +2807,9 @@ int CSwitchGamesXlsx::readResult()
 	string sResultText = pTemp;
 	delete[] pTemp;
 	vector<string> vResultText = SplitOf(sResultText, "\r\n");
-	for (vector<string>::iterator it = vResultText.begin(); it != vResultText.end(); ++it)
+	for (vector<string>::iterator itResultText = vResultText.begin(); itResultText != vResultText.end(); ++itResultText)
 	{
-		*it = trim(*it);
+		*itResultText = trim(*itResultText);
 	}
 	vector<string>::iterator itResultText = remove_if(vResultText.begin(), vResultText.end(), empty);
 	vResultText.erase(itResultText, vResultText.end());

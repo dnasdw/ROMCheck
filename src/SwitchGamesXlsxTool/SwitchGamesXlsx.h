@@ -114,6 +114,8 @@ private:
 	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
 	static bool pathCompare(const UString& lhs, const UString& rhs);
 	static int readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent);
+	static bool makeDir(const UString& a_sDirPath);
+	static int writeFileString(const UString& a_sFilePath, const string& a_sStringContent);
 	int readConfig();
 	int readWorkbook();
 	int readSharedStrings();

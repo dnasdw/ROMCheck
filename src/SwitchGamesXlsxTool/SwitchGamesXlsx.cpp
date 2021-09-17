@@ -10,7 +10,8 @@ CSwitchGamesXlsx::STextFileContent::STextFileContent()
 }
 
 CSwitchGamesXlsx::CSwitchGamesXlsx()
-	: m_bResave(false)
+	: m_bStyleIsGreen(true)
+	, m_bResave(false)
 	, m_bCompact(false)
 	, m_nActiveTabOld(0)
 	, m_nActiveTabNew(0)
@@ -41,6 +42,16 @@ void CSwitchGamesXlsx::SetResultFileName(const UString& a_sResultFileName)
 void CSwitchGamesXlsx::SetRemoteDirName(const UString& a_sRemoteDirName)
 {
 	m_sRemoteDirName = a_sRemoteDirName;
+}
+
+void CSwitchGamesXlsx::SetBaiduUserId(const UString& a_sBaiduUserId)
+{
+	m_sBaiduUserId = a_sBaiduUserId;
+}
+
+void CSwitchGamesXlsx::SetStyleIsGreen(bool a_bStyleIsGreen)
+{
+	m_bStyleIsGreen = a_bStyleIsGreen;
 }
 
 int CSwitchGamesXlsx::Resave()
@@ -239,6 +250,27 @@ int CSwitchGamesXlsx::MakeRclonePatchBat()
 		return 1;
 	}
 	if (makeRclonePatchBat() != 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::MakeBaiduPCSGoPatchBat()
+{
+	if (readConfig() != 0)
+	{
+		return 1;
+	}
+	if (readTable() != 0)
+	{
+		return 1;
+	}
+	if (makePatchTypeFileList() != 0)
+	{
+		return 1;
+	}
+	if (makeBaiduPCSGoPatchBat() != 0)
 	{
 		return 1;
 	}
@@ -3154,6 +3186,113 @@ int CSwitchGamesXlsx::makeRclonePatchBat()
 		string sDirName = UToU8(*it);
 		fprintf(fp, "rclone check \"%s/%s\" \"%s/%s\" --one-way --checksum -P --drive-server-side-across-configs || PAUSE\r\n", sSrcPrefix.c_str(), sDirName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
 	}
+	fprintf(fp, "POPD\r\n");
+	fprintf(fp, "PAUSE\r\n");
+	fclose(fp);
+	return 0;
+}
+
+int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
+{
+	UString sTableDirName = m_sTableDirName;
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+	u32 uMaxPath = sTableDirName.size() + MAX_PATH * 2;
+	wchar_t* pTableDirName = new wchar_t[uMaxPath];
+	if (_wfullpath(pTableDirName, UToW(sTableDirName).c_str(), uMaxPath) == nullptr)
+	{
+		return 1;
+	}
+	sTableDirName = WToU(pTableDirName);
+	sTableDirName = Replace(sTableDirName, USTR("\\"), USTR("/"));
+#endif
+	string sSrcPrefix = UToU8(sTableDirName);
+	string sDestPrefix = UToU8(m_sRemoteDirName);
+	UString sBaiduPCSGoUploadTxtFileName;
+	UString sBaiduPCSGoUploadBatFileName;
+	if (m_bStyleIsGreen)
+	{
+		sBaiduPCSGoUploadTxtFileName = m_sTableDirName + USTR("/baidupcs-go_0_0_upload_green.txt");
+		sBaiduPCSGoUploadBatFileName = m_sTableDirName + USTR("/baidupcs-go_0_1_upload_green.bat");
+	}
+	else
+	{
+		sBaiduPCSGoUploadTxtFileName = m_sTableDirName + USTR("/baidupcs-go_2_0_upload.txt");
+		sBaiduPCSGoUploadBatFileName = m_sTableDirName + USTR("/baidupcs-go_2_1_upload.bat");
+	}
+	FILE* fp = UFopen(sBaiduPCSGoUploadTxtFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "su %s\r\n", UToU8(m_sBaiduUserId).c_str());
+	for (vector<pair<UString, bool>>::iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
+	{
+		if (it->second == m_bStyleIsGreen)
+		{
+			string sFileName = UToU8(it->first);
+			string sDirName = ".";
+			string::size_type uPos = sFileName.rfind("/");
+			if (uPos != string::npos)
+			{
+				sDirName = sFileName.substr(0, uPos);
+			}
+			fprintf(fp, "rm \"%s/%s\"\r\n", sDestPrefix.c_str(), sFileName.c_str());
+			fprintf(fp, "upload \"%s/%s\" \"%s/%s\"\r\n", sSrcPrefix.c_str(), sFileName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
+			fprintf(fp, "fixmd5 \"%s/%s\"\r\n", sDestPrefix.c_str(), sFileName.c_str());
+		}
+	}
+	fclose(fp);
+	fp = UFopen(sBaiduPCSGoUploadBatFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "CHCP 65001\r\n");
+	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
+	fprintf(fp, "BaiduPCS-Go < \"%s\"\r\n", UToU8(sBaiduPCSGoUploadTxtFileName.substr(m_sTableDirName.size() + 1)).c_str());
+	fprintf(fp, "POPD\r\n");
+	fprintf(fp, "PAUSE\r\n");
+	fclose(fp);
+	string sBaiduPCSGoMd5TxtFileName;
+	UString sBaiduPCSGoSumMetaTxtFileName;
+	UString sBaiduPCSGoSumMetaCheckBatFileName;
+	if (m_bStyleIsGreen)
+	{
+		sBaiduPCSGoMd5TxtFileName = "baidupcs-go_1_0_md5_green.txt";
+		sBaiduPCSGoSumMetaTxtFileName = m_sTableDirName + USTR("/baidupcs-go_1_0_sum_meta_green.txt");
+		sBaiduPCSGoSumMetaCheckBatFileName = m_sTableDirName + USTR("/baidupcs-go_1_1_sum_meta_check_green.bat");
+	}
+	else
+	{
+		sBaiduPCSGoMd5TxtFileName = "baidupcs-go_3_0_md5.txt";
+		sBaiduPCSGoSumMetaTxtFileName = m_sTableDirName + USTR("/baidupcs-go_3_0_sum_meta.txt");
+		sBaiduPCSGoSumMetaCheckBatFileName = m_sTableDirName + USTR("/baidupcs-go_3_1_sum_meta_check.bat");
+	}
+	fp = UFopen(sBaiduPCSGoSumMetaTxtFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "su %s\r\n", UToU8(m_sBaiduUserId).c_str());
+	for (vector<pair<UString, bool>>::iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
+	{
+		if (it->second == m_bStyleIsGreen)
+		{
+			string sFileName = UToU8(it->first);
+			fprintf(fp, "sumfile \"%s/%s\"\r\n", sSrcPrefix.c_str(), sFileName.c_str());
+			fprintf(fp, "meta \"%s/%s\"\r\n", sDestPrefix.c_str(), sFileName.c_str());
+		}
+	}
+	fclose(fp);
+	fp = UFopen(sBaiduPCSGoSumMetaCheckBatFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "CHCP 65001\r\n");
+	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
+	fprintf(fp, "BaiduPCS-Go < \"%s\" > \"%s\"\r\n", UToU8(sBaiduPCSGoSumMetaTxtFileName.substr(m_sTableDirName.size() + 1)).c_str(), sBaiduPCSGoMd5TxtFileName.c_str());
+	// TODO
 	fprintf(fp, "POPD\r\n");
 	fprintf(fp, "PAUSE\r\n");
 	fclose(fp);

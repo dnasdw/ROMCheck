@@ -57,6 +57,16 @@ int makeRclonePatchBat(const UString& a_sTableDirName, const UString& a_sRemoteD
 	return switchGamesXlsx.MakeRclonePatchBat();
 }
 
+int makeBaiduPCSGoPatchBat(const UString& a_sTableDirName, const UString& a_sRemoteDirName, const UString& a_sBaiduUserId, bool a_bStyleIsGreen)
+{
+	CSwitchGamesXlsx switchGamesXlsx;
+	switchGamesXlsx.SetTableDirName(a_sTableDirName);
+	switchGamesXlsx.SetRemoteDirName(a_sRemoteDirName);
+	switchGamesXlsx.SetBaiduUserId(a_sBaiduUserId);
+	switchGamesXlsx.SetStyleIsGreen(a_bStyleIsGreen);
+	return switchGamesXlsx.MakeBaiduPCSGoPatchBat();
+}
+
 int UMain(int argc, UChar* argv[])
 {
 	if (argc < 3)
@@ -113,6 +123,14 @@ int UMain(int argc, UChar* argv[])
 			return 1;
 		}
 		return makeRclonePatchBat(argv[2], argv[3]);
+	}
+	else if (UCscmp(argv[1], USTR("make_baidupcs-go_patch_bat")) == 0)
+	{
+		if (argc != 7)
+		{
+			return 1;
+		}
+		return makeBaiduPCSGoPatchBat(argv[2], argv[3], argv[4], true) == 0 && makeBaiduPCSGoPatchBat(argv[2], argv[5], argv[6], false) == 0 ? 0 : 1;
 	}
 	return 1;
 }

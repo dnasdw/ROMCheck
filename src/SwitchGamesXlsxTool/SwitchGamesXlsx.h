@@ -100,12 +100,15 @@ public:
 	void SetTableDirName(const UString& a_sTableDirName);
 	void SetResultFileName(const UString& a_sResultFileName);
 	void SetRemoteDirName(const UString& a_sRemoteDirName);
+	void SetBaiduUserId(const UString& a_sBaiduUserId);
+	void SetStyleIsGreen(bool a_bStyleIsGreen);
 	int Resave();
 	int Export();
 	int Import();
 	int Sort();
 	int Check();
 	int MakeRclonePatchBat();
+	int MakeBaiduPCSGoPatchBat();
 private:
 	static string validateText(const string& a_sText);
 	static string validateValue(const string& a_sValue);
@@ -144,10 +147,13 @@ private:
 	void updateSharedStrings();
 	int makePatchTypeFileList();
 	int makeRclonePatchBat();
+	int makeBaiduPCSGoPatchBat();
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
 	UString m_sResultFileName;
 	UString m_sRemoteDirName;
+	UString m_sBaiduUserId;
+	bool m_bStyleIsGreen;
 	bool m_bResave;
 	bool m_bCompact;
 	UString m_sModuleDirName;

@@ -99,11 +99,14 @@ public:
 	void SetXlsxDirName(const UString& a_sXlsxDirName);
 	void SetTableDirName(const UString& a_sTableDirName);
 	void SetResultFileName(const UString& a_sResultFileName);
+	void SetPatchDirName(const UString& a_sPatchDirName);
+	void SetRemoteDirName(const UString& a_sRemoteDirName);
 	int Resave();
 	int Export();
 	int Import();
 	int Sort();
 	int Check();
+	int MakeRclonePatchBat();
 private:
 	static string validateText(const string& a_sText);
 	static string validateValue(const string& a_sValue);
@@ -139,9 +142,13 @@ private:
 	int checkTable();
 	int readResult();
 	void updateSharedStrings();
+	int makePatchTypeFileList();
+	int makeRclonePatchBat();
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
 	UString m_sResultFileName;
+	UString m_sPatchDirName;
+	UString m_sRemoteDirName;
 	bool m_bResave;
 	bool m_bCompact;
 	UString m_sModuleDirName;
@@ -161,6 +168,8 @@ private:
 	map<wstring, map<n32, n32>> m_mTableRowStyle;
 	map<wstring, map<n32, map<n32, pair<bool, wstring>>>> mTableRowColumnText;
 	vector<SResult> m_vResult;
+	vector<UString> m_vPatchTypeList;
+	vector<UString> m_vPatchFileList;
 };
 
 #endif	// SWITCH_GAMES_XLSX_H_

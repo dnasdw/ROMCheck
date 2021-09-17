@@ -38,6 +38,16 @@ void CSwitchGamesXlsx::SetResultFileName(const UString& a_sResultFileName)
 	m_sResultFileName = a_sResultFileName;
 }
 
+void CSwitchGamesXlsx::SetPatchDirName(const UString& a_sPatchDirName)
+{
+	m_sPatchDirName = a_sPatchDirName;
+}
+
+void CSwitchGamesXlsx::SetRemoteDirName(const UString& a_sRemoteDirName)
+{
+	m_sRemoteDirName = a_sRemoteDirName;
+}
+
 int CSwitchGamesXlsx::Resave()
 {
 	m_bResave = true;
@@ -213,6 +223,23 @@ int CSwitchGamesXlsx::Check()
 	}
 	updateSharedStrings();
 	if (writeTable() != 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int CSwitchGamesXlsx::MakeRclonePatchBat()
+{
+	if (readConfig() != 0)
+	{
+		return 1;
+	}
+	if (makePatchTypeFileList() != 0)
+	{
+		return 1;
+	}
+	if (makeRclonePatchBat() != 0)
 	{
 		return 1;
 	}
@@ -577,7 +604,7 @@ bool CSwitchGamesXlsx::makeDir(const UString& a_sDirPath)
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
 	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
 	wchar_t* pDirPath = new wchar_t[uMaxPath];
-	if (_wfullpath(pDirPath, sDirPath.c_str(), uMaxPath) == nullptr)
+	if (_wfullpath(pDirPath, UToW(sDirPath).c_str(), uMaxPath) == nullptr)
 	{
 		return false;
 	}
@@ -634,11 +661,11 @@ int CSwitchGamesXlsx::writeFileString(const UString& a_sFilePath, const string& 
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
 	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
 	wchar_t* pFilePath = new wchar_t[uMaxPath];
-	if (_wfullpath(pFilePath, a_sFilePath.c_str(), uMaxPath) == nullptr)
+	if (_wfullpath(pFilePath, UToW(a_sFilePath).c_str(), uMaxPath) == nullptr)
 	{
 		return 1;
 	}
-	sFilePath = pFilePath;
+	sFilePath = WToU(pFilePath);
 	delete[] pFilePath;
 	if (!StartWith(sFilePath, USTR("\\\\")))
 	{
@@ -2933,4 +2960,145 @@ void CSwitchGamesXlsx::updateSharedStrings()
 	{
 		it->second = nSharedStringsIndexNew++;
 	}
+}
+
+int CSwitchGamesXlsx::makePatchTypeFileList()
+{
+	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
+	{
+		UString sPath = m_sPatchDirName + USTR("/") + WToU(m_vSheetName[i]);
+		UString::size_type uPrefixSize = m_sPatchDirName.size() + 1;
+		vector<UString>& vFile = m_vPatchFileList;
+		queue<UString> qDir;
+		qDir.push(sPath);
+		while (!qDir.empty())
+		{
+			UString& sParent = qDir.front();
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+			WIN32_FIND_DATAW ffd;
+			HANDLE hFind = INVALID_HANDLE_VALUE;
+			wstring sPattern = sParent + L"/*";
+			hFind = FindFirstFileW(sPattern.c_str(), &ffd);
+			if (hFind != INVALID_HANDLE_VALUE)
+			{
+				if (sParent == sPath)
+				{
+					m_vPatchTypeList.push_back(m_vSheetName[i]);
+				}
+				do
+				{
+					if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+					{
+						wstring sFileName = sParent + L"/" + ffd.cFileName;
+						vFile.push_back(sFileName.substr(uPrefixSize));
+					}
+					else if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 && wcscmp(ffd.cFileName, L".") != 0 && wcscmp(ffd.cFileName, L"..") != 0)
+					{
+						wstring sDir = sParent + L"/" + ffd.cFileName;
+						qDir.push(sDir);
+					}
+				} while (FindNextFileW(hFind, &ffd) != 0);
+				FindClose(hFind);
+			}
+#else
+			DIR* pDir = opendir(sParent.c_str());
+			if (pDir != nullptr)
+			{
+				if (sParent == sPath)
+				{
+					m_vPatchTypeList.push_back(m_vSheetName[i]);
+				}
+				dirent* pDirent = nullptr;
+				while ((pDirent = readdir(pDir)) != nullptr)
+				{
+					string sName = pDirent->d_name;
+#if SDW_PLATFORM == SDW_PLATFORM_MACOS
+					sName = TSToS<string, string>(sName, "UTF-8-MAC", "UTF-8");
+#endif
+					// handle cases where d_type is DT_UNKNOWN
+					if (pDirent->d_type == DT_UNKNOWN)
+					{
+						string sPath = sParent + "/" + sName;
+						Stat st;
+						if (UStat(sPath.c_str(), &st) == 0)
+						{
+							if (S_ISREG(st.st_mode))
+							{
+								pDirent->d_type = DT_REG;
+							}
+							else if (S_ISDIR(st.st_mode))
+							{
+								pDirent->d_type = DT_DIR;
+							}
+						}
+					}
+					if (pDirent->d_type == DT_REG)
+					{
+						string sFileName = sParent + "/" + pDirent->d_name;
+						vFile.push_back(sFileName.substr(uPrefixSize));
+					}
+					else if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
+					{
+						string sDir = sParent + "/" + pDirent->d_name;
+						qDir.push(sDir);
+					}
+				}
+				closedir(pDir);
+			}
+#endif
+			qDir.pop();
+		}
+	}
+	sort(m_vPatchFileList.begin(), m_vPatchFileList.end(), pathCompare);
+	return 0;
+}
+
+int CSwitchGamesXlsx::makeRclonePatchBat()
+{
+	UString sPatchDirName = m_sPatchDirName;
+#if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
+	u32 uMaxPath = sPatchDirName.size() + MAX_PATH * 2;
+	wchar_t* pPatchDirName = new wchar_t[uMaxPath];
+	if (_wfullpath(pPatchDirName, UToW(sPatchDirName).c_str(), uMaxPath) == nullptr)
+	{
+		return 1;
+	}
+	sPatchDirName = WToU(pPatchDirName);
+	sPatchDirName = Replace(sPatchDirName, USTR("\\"), USTR("/"));
+#endif
+	string sSrcPrefix = UToU8(sPatchDirName);
+	string sDestPrefix = UToU8(m_sRemoteDirName);
+	UString sRcloneCopyBatFileName = m_sPatchDirName + USTR("/rclone_0_copy.bat");
+	FILE* fp = UFopen(sRcloneCopyBatFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "CHCP 65001\r\n");
+	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
+	for (vector<UString>::iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
+	{
+		string sDirName = UToU8(*it);
+		fprintf(fp, "rclone copy \"%s/%s\" \"%s/%s\" --checksum -P --drive-server-side-across-configs\r\n", sSrcPrefix.c_str(), sDirName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
+	}
+	fprintf(fp, "POPD\r\n");
+	fprintf(fp, "PAUSE\r\n");
+	fclose(fp);
+	UString sRcloneCheckBatFileName = m_sPatchDirName + USTR("/rclone_1_check.bat");
+	fp = UFopen(sRcloneCheckBatFileName.c_str(), USTR("wb"), false);
+	if (fp == nullptr)
+	{
+		return 1;
+	}
+	fprintf(fp, "CHCP 65001\r\n");
+	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
+	for (vector<UString>::iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
+	{
+		string sDirName = UToU8(*it);
+		fprintf(fp, "rclone check \"%s/%s\" \"%s/%s\" --one-way --checksum -P --drive-server-side-across-configs || PAUSE\r\n", sSrcPrefix.c_str(), sDirName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
+	}
+	fprintf(fp, "POPD\r\n");
+	fprintf(fp, "PAUSE\r\n");
+	fclose(fp);
+	return 0;
 }

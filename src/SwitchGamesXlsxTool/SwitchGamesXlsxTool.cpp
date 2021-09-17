@@ -49,6 +49,14 @@ int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName)
 	return switchGamesXlsx.Check();
 }
 
+int makeRclonePatchBat(const UString& a_sPatchDirName, const UString& a_sRemoteDirName)
+{
+	CSwitchGamesXlsx switchGamesXlsx;
+	switchGamesXlsx.SetPatchDirName(a_sPatchDirName);
+	switchGamesXlsx.SetRemoteDirName(a_sRemoteDirName);
+	return switchGamesXlsx.MakeRclonePatchBat();
+}
+
 int UMain(int argc, UChar* argv[])
 {
 	if (argc < 3)
@@ -97,6 +105,14 @@ int UMain(int argc, UChar* argv[])
 		default:
 			break;
 		}
+	}
+	else if (UCscmp(argv[1], USTR("make_rclone_patch_bat")) == 0)
+	{
+		if (argc != 4)
+		{
+			return 1;
+		}
+		return makeRclonePatchBat(argv[2], argv[3]);
 	}
 	return 1;
 }

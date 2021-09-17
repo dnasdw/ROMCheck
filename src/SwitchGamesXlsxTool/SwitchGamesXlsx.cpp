@@ -3292,7 +3292,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
 	fprintf(fp, "CHCP 65001\r\n");
 	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
 	fprintf(fp, "BaiduPCS-Go < \"%s\" > \"%s\"\r\n", UToU8(sBaiduPCSGoSumMetaTxtFileName.substr(m_sTableDirName.size() + 1)).c_str(), sBaiduPCSGoMd5TxtFileName.c_str());
-	// TODO
+	fprintf(fp, "CheckBaiduPCSGoMd5 \"%s\" || PAUSE\r\n", sBaiduPCSGoMd5TxtFileName.c_str());
 	fprintf(fp, "POPD\r\n");
 	fprintf(fp, "PAUSE\r\n");
 	fclose(fp);

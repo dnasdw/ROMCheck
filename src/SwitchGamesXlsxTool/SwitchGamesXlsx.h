@@ -99,7 +99,6 @@ public:
 	void SetXlsxDirName(const UString& a_sXlsxDirName);
 	void SetTableDirName(const UString& a_sTableDirName);
 	void SetResultFileName(const UString& a_sResultFileName);
-	void SetPatchDirName(const UString& a_sPatchDirName);
 	void SetRemoteDirName(const UString& a_sRemoteDirName);
 	int Resave();
 	int Export();
@@ -116,8 +115,9 @@ private:
 	static string trim(const string& a_sLine);
 	static wstring trim(const wstring& a_sLine);
 	static bool empty(const string& a_sLine);
-	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
 	static bool pathCompare(const UString& lhs, const UString& rhs);
+	static bool rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs);
+	static bool fileListCompare(const pair<UString, bool>& lhs, const pair<UString, bool>& rhs);
 	static int readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent);
 	static bool makeDir(const UString& a_sDirPath);
 	static int writeFileString(const UString& a_sFilePath, const string& a_sStringContent);
@@ -147,7 +147,6 @@ private:
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
 	UString m_sResultFileName;
-	UString m_sPatchDirName;
 	UString m_sRemoteDirName;
 	bool m_bResave;
 	bool m_bCompact;
@@ -169,7 +168,7 @@ private:
 	map<wstring, map<n32, map<n32, pair<bool, wstring>>>> mTableRowColumnText;
 	vector<SResult> m_vResult;
 	vector<UString> m_vPatchTypeList;
-	vector<UString> m_vPatchFileList;
+	vector<pair<UString, bool>> m_vPatchFileList;
 };
 
 #endif	// SWITCH_GAMES_XLSX_H_

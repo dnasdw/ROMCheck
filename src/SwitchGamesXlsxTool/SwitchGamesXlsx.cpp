@@ -38,11 +38,6 @@ void CSwitchGamesXlsx::SetResultFileName(const UString& a_sResultFileName)
 	m_sResultFileName = a_sResultFileName;
 }
 
-void CSwitchGamesXlsx::SetPatchDirName(const UString& a_sPatchDirName)
-{
-	m_sPatchDirName = a_sPatchDirName;
-}
-
 void CSwitchGamesXlsx::SetRemoteDirName(const UString& a_sRemoteDirName)
 {
 	m_sRemoteDirName = a_sRemoteDirName;
@@ -235,6 +230,10 @@ int CSwitchGamesXlsx::MakeRclonePatchBat()
 	{
 		return 1;
 	}
+	if (readTable() != 0)
+	{
+		return 1;
+	}
 	if (makePatchTypeFileList() != 0)
 	{
 		return 1;
@@ -372,11 +371,6 @@ bool CSwitchGamesXlsx::empty(const string& a_sLine)
 	return trim(a_sLine).empty();
 }
 
-bool CSwitchGamesXlsx::rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs)
-{
-	return pathCompare(WToU(lhs.second), WToU(rhs.second));
-}
-
 bool CSwitchGamesXlsx::pathCompare(const UString& lhs, const UString& rhs)
 {
 	wstring sLhs = UToW(lhs);
@@ -384,6 +378,16 @@ bool CSwitchGamesXlsx::pathCompare(const UString& lhs, const UString& rhs)
 	wstring sRhs = UToW(rhs);
 	transform(sRhs.begin(), sRhs.end(), sRhs.begin(), toupper);
 	return sLhs < sRhs;
+}
+
+bool CSwitchGamesXlsx::rowColumnTextCompare(const pair<n32, wstring>& lhs, const pair<n32, wstring>& rhs)
+{
+	return pathCompare(WToU(lhs.second), WToU(rhs.second));
+}
+
+bool CSwitchGamesXlsx::fileListCompare(const pair<UString, bool>& lhs, const pair<UString, bool>& rhs)
+{
+	return pathCompare(lhs.first, rhs.first);
 }
 
 int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent)
@@ -2966,14 +2970,31 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 {
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
-		UString sPath = m_sPatchDirName + USTR("/") + WToU(m_vSheetName[i]);
-		UString::size_type uPrefixSize = m_sPatchDirName.size() + 1;
-		vector<UString>& vFile = m_vPatchFileList;
-		queue<UString> qDir;
-		qDir.push(sPath);
+		const wstring& sType = m_vSheetName[i];
+		map<n32, n32>& mRowStyle = m_mTableRowStyle[sType];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sType];
+		map<UString, n32> mDirIndex;
+		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
+		{
+			map<n32, pair<bool, wstring>>& mColumnText = itRow->second;
+			if (mColumnText[0].first)
+			{
+				if (!mDirIndex.insert(make_pair(WToU(mColumnText[0].second), itRow->first)).second)
+				{
+					return 1;
+				}
+			}
+		}
+		n32 nRowIndex = -1;
+		UString sPath = m_sTableDirName + USTR("/") + WToU(m_vSheetName[i]);
+		UString::size_type uPrefixSize = m_sTableDirName.size() + 1;
+		vector<pair<UString, bool>>& vFile = m_vPatchFileList;
+		queue<pair<UString, bool>> qDir;
+		qDir.push(make_pair(sPath, false));
 		while (!qDir.empty())
 		{
-			UString& sParent = qDir.front();
+			UString& sParent = qDir.front().first;
+			bool bParentStyleIsGreen = qDir.front().second;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
 			WIN32_FIND_DATAW ffd;
 			HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -2983,19 +3004,37 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			{
 				if (sParent == sPath)
 				{
-					m_vPatchTypeList.push_back(m_vSheetName[i]);
+					m_vPatchTypeList.push_back(sType);
 				}
 				do
 				{
 					if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
 					{
 						wstring sFileName = sParent + L"/" + ffd.cFileName;
-						vFile.push_back(sFileName.substr(uPrefixSize));
+						vFile.push_back(make_pair(sFileName.substr(uPrefixSize), bParentStyleIsGreen));
 					}
 					else if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 && wcscmp(ffd.cFileName, L".") != 0 && wcscmp(ffd.cFileName, L"..") != 0)
 					{
-						wstring sDir = sParent + L"/" + ffd.cFileName;
-						qDir.push(sDir);
+						wstring sDir = ffd.cFileName;
+						map<UString, n32>::iterator itDir = mDirIndex.find(sDir);
+						if (itDir == mDirIndex.end())
+						{
+							FindClose(hFind);
+							return 1;
+						}
+						nRowIndex = itDir->second;
+						if (nRowIndex < 2)
+						{
+							FindClose(hFind);
+							return 1;
+						}
+						bool bStyleIsGreen = false;
+						if (sParent == sPath)
+						{
+							bStyleIsGreen = mRowStyle[nRowIndex] == kStyleIdGreen;
+						}
+						sDir = sParent + L"/" + sDir;
+						qDir.push(make_pair(sDir, bStyleIsGreen));
 					}
 				} while (FindNextFileW(hFind, &ffd) != 0);
 				FindClose(hFind);
@@ -3006,7 +3045,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			{
 				if (sParent == sPath)
 				{
-					m_vPatchTypeList.push_back(m_vSheetName[i]);
+					m_vPatchTypeList.push_back(WToU(sType));
 				}
 				dirent* pDirent = nullptr;
 				while ((pDirent = readdir(pDir)) != nullptr)
@@ -3035,12 +3074,30 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 					if (pDirent->d_type == DT_REG)
 					{
 						string sFileName = sParent + "/" + pDirent->d_name;
-						vFile.push_back(sFileName.substr(uPrefixSize));
+						vFile.push_back(make_pair(sFileName.substr(uPrefixSize), bParentStyleIsGreen));
 					}
 					else if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
 					{
-						string sDir = sParent + "/" + pDirent->d_name;
-						qDir.push(sDir);
+						string sDir = pDirent->d_name;
+						map<UString, n32>::iterator itDir = mDirIndex.find(sDir);
+						if (itDir == mDirIndex.end())
+						{
+							closedir(pDir);
+							return 1;
+						}
+						nRowIndex = itDir->second;
+						if (nRowIndex < 2)
+						{
+							closedir(pDir);
+							return 1;
+						}
+						bool bStyleIsGreen = false;
+						if (sParent == sPath)
+						{
+							bStyleIsGreen = mRowStyle[nRowIndex] == kStyleIdGreen;
+						}
+						sDir = sParent + "/" + sDir;
+						qDir.push(make_pair(sDir, bStyleIsGreen));
 					}
 				}
 				closedir(pDir);
@@ -3049,26 +3106,26 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			qDir.pop();
 		}
 	}
-	sort(m_vPatchFileList.begin(), m_vPatchFileList.end(), pathCompare);
+	sort(m_vPatchFileList.begin(), m_vPatchFileList.end(), fileListCompare);
 	return 0;
 }
 
 int CSwitchGamesXlsx::makeRclonePatchBat()
 {
-	UString sPatchDirName = m_sPatchDirName;
+	UString sTableDirName = m_sTableDirName;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
-	u32 uMaxPath = sPatchDirName.size() + MAX_PATH * 2;
-	wchar_t* pPatchDirName = new wchar_t[uMaxPath];
-	if (_wfullpath(pPatchDirName, UToW(sPatchDirName).c_str(), uMaxPath) == nullptr)
+	u32 uMaxPath = sTableDirName.size() + MAX_PATH * 2;
+	wchar_t* pTableDirName = new wchar_t[uMaxPath];
+	if (_wfullpath(pTableDirName, UToW(sTableDirName).c_str(), uMaxPath) == nullptr)
 	{
 		return 1;
 	}
-	sPatchDirName = WToU(pPatchDirName);
-	sPatchDirName = Replace(sPatchDirName, USTR("\\"), USTR("/"));
+	sTableDirName = WToU(pTableDirName);
+	sTableDirName = Replace(sTableDirName, USTR("\\"), USTR("/"));
 #endif
-	string sSrcPrefix = UToU8(sPatchDirName);
+	string sSrcPrefix = UToU8(sTableDirName);
 	string sDestPrefix = UToU8(m_sRemoteDirName);
-	UString sRcloneCopyBatFileName = m_sPatchDirName + USTR("/rclone_0_copy.bat");
+	UString sRcloneCopyBatFileName = m_sTableDirName + USTR("/rclone_0_copy.bat");
 	FILE* fp = UFopen(sRcloneCopyBatFileName.c_str(), USTR("wb"), false);
 	if (fp == nullptr)
 	{
@@ -3084,7 +3141,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat()
 	fprintf(fp, "POPD\r\n");
 	fprintf(fp, "PAUSE\r\n");
 	fclose(fp);
-	UString sRcloneCheckBatFileName = m_sPatchDirName + USTR("/rclone_1_check.bat");
+	UString sRcloneCheckBatFileName = m_sTableDirName + USTR("/rclone_1_check.bat");
 	fp = UFopen(sRcloneCheckBatFileName.c_str(), USTR("wb"), false);
 	if (fp == nullptr)
 	{

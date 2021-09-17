@@ -49,10 +49,10 @@ int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName)
 	return switchGamesXlsx.Check();
 }
 
-int makeRclonePatchBat(const UString& a_sPatchDirName, const UString& a_sRemoteDirName)
+int makeRclonePatchBat(const UString& a_sTableDirName, const UString& a_sRemoteDirName)
 {
 	CSwitchGamesXlsx switchGamesXlsx;
-	switchGamesXlsx.SetPatchDirName(a_sPatchDirName);
+	switchGamesXlsx.SetTableDirName(a_sTableDirName);
 	switchGamesXlsx.SetRemoteDirName(a_sRemoteDirName);
 	return switchGamesXlsx.MakeRclonePatchBat();
 }

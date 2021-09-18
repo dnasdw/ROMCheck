@@ -3274,6 +3274,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
 		return 1;
 	}
 	fprintf(fp, "su %s\r\n", UToU8(m_sBaiduUserId).c_str());
+	fprintf(fp, "who\r\n");
 	for (vector<pair<UString, bool>>::iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
 	{
 		if (it->second == m_bStyleIsGreen)

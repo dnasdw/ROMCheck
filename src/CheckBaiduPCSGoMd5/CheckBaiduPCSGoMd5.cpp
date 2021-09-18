@@ -36,7 +36,23 @@ int UMain(int argc, UChar* argv[])
 	{
 		return 1;
 	}
-	FILE* fp = UFopen(argv[1], USTR("rb"), false);
+	UString sMd5Path = argv[1];
+	UString sMd5ErrorTxtPath = sMd5Path + USTR(".error.txt");
+	UString sMd5ErrorBatPath = sMd5Path + USTR(".error.bat");
+	UString sMd5ErrorTxtName = sMd5ErrorTxtPath;
+	UString::size_type uPos = sMd5ErrorTxtPath.find_last_of(USTR("/\\"));
+	if (uPos != UString::npos)
+	{
+		sMd5ErrorTxtName = sMd5ErrorTxtPath.substr(uPos + 1);
+	}
+	string sErrorBat;
+	sErrorBat += "CHCP 65001\r\n";
+	sErrorBat += "PUSHD \"%~dp0\"\r\n";
+	sErrorBat += Format("BaiduPCS-Go < \"%s\"\r\n", UToU8(sMd5ErrorTxtName).c_str());
+	sErrorBat += "POPD\r\n";
+	sErrorBat += "PAUSE\r\n";
+	string sErrorTxt;
+	FILE* fp = UFopen(sMd5Path.c_str(), USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -60,10 +76,28 @@ int UMain(int argc, UChar* argv[])
 	vector<SFileMd5> vFileMd5;
 	vFileMd5.reserve(vText.size() / 17);
 	vector<SFileMd5>::iterator itFileMd5 = vFileMd5.end();
+	bool bHasBaiduUserId = false;
 	bool bLocal = true;
 	for (itText = vText.begin(); itText != vText.end(); ++itText)
 	{
 		UString& sLine = *itText;
+		if (!bHasBaiduUserId)
+		{
+			UString::size_type uPos0 = sLine.find(USTR(" uid: "));
+			if (uPos0 == UString::npos)
+			{
+				continue;
+			}
+			uPos0 += UCslen(USTR(" uid: "));
+			UString::size_type uPos1 = sLine.find(USTR(", "), uPos0);
+			if (uPos1 == UString::npos)
+			{
+				return 1;
+			}
+			sErrorTxt += "su " + UToU8(sLine.substr(uPos0, uPos1 - uPos0)) + "\r\n";
+			bHasBaiduUserId = true;
+			continue;
+		}
 		if (StartWith(sLine, USTR("[1] - [")))
 		{
 			if (itFileMd5 == vFileMd5.end() || !itFileMd5->LocalFileName.empty())
@@ -140,6 +174,24 @@ int UMain(int argc, UChar* argv[])
 		if (fileMd5.RemoteFileMd5Upper != fileMd5.LocalFileMd5Upper)
 		{
 			bError = true;
+			if (!fileMd5.RemoteFileName.empty())
+			{
+				sErrorTxt += Format("rm \"%s\"\r\n", UToU8(fileMd5.RemoteFileName).c_str());
+			}
+			if (!fileMd5.LocalFileName.empty() && !fileMd5.RemoteFileName.empty())
+			{
+				UString sRemoteDirName = USTR("/");
+				uPos = fileMd5.RemoteFileName.rfind(USTR("/"));
+				if (uPos != UString::npos)
+				{
+					sRemoteDirName = fileMd5.RemoteFileName.substr(0, uPos);
+				}
+				sErrorTxt += Format("upload \"%s\" \"%s\"\r\n", UToU8(fileMd5.LocalFileName).c_str(), UToU8(sRemoteDirName).c_str());
+			}
+			if (!fileMd5.RemoteFileName.empty())
+			{
+				sErrorTxt += Format("fixmd5 \"%s\"\r\n", UToU8(fileMd5.RemoteFileName).c_str());
+			}
 			UPrintf(USTR("error ------------------------------\n"));
 			UPrintf(USTR("%d:\n"), i);
 			UPrintf(USTR("L   %") PRIUS USTR(" %") PRIUS USTR("\n"), fileMd5.LocalFileMd5Upper.c_str(), fileMd5.LocalFileName.c_str());
@@ -147,5 +199,23 @@ int UMain(int argc, UChar* argv[])
 			UPrintf(USTR("\n"));
 		}
 	}
-	return bError ? 1 : 0;
+	if (bError)
+	{
+		fp = UFopen(sMd5ErrorTxtPath.c_str(), USTR("wb"), false);
+		if (fp == nullptr)
+		{
+			return 1;
+		}
+		fwrite(sErrorTxt.c_str(), 1, sErrorTxt.size(), fp);
+		fclose(fp);
+		fp = UFopen(sMd5ErrorBatPath.c_str(), USTR("wb"), false);
+		if (fp == nullptr)
+		{
+			return 1;
+		}
+		fwrite(sErrorBat.c_str(), 1, sErrorBat.size(), fp);
+		fclose(fp);
+		return 1;
+	}
+	return 0;
 }

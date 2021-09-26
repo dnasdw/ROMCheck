@@ -106,7 +106,7 @@ int UMain(int argc, UChar* argv[])
 				if (vFileMd5.size() > 1)
 				{
 					itFileMd5 = vFileMd5.end() - 2;
-					UPrintf(USTR("%d:\n"), vFileMd5.size() - 2);
+					UPrintf(USTR("%d:\n"), static_cast<n32>(vFileMd5.size() - 2));
 					UPrintf(USTR("L   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->LocalFileMd5Upper.c_str(), itFileMd5->LocalFileName.c_str());
 					UPrintf(USTR("R   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->RemoteFileMd5Upper.c_str(), itFileMd5->RemoteFileName.c_str());
 					UPrintf(USTR("\n"));
@@ -124,7 +124,7 @@ int UMain(int argc, UChar* argv[])
 				if (vFileMd5.size() > 1)
 				{
 					itFileMd5 = vFileMd5.end() - 2;
-					UPrintf(USTR("%d:\n"), vFileMd5.size() - 2);
+					UPrintf(USTR("%d:\n"), static_cast<n32>(vFileMd5.size() - 2));
 					UPrintf(USTR("L   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->LocalFileMd5Upper.c_str(), itFileMd5->LocalFileName.c_str());
 					UPrintf(USTR("R   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->RemoteFileMd5Upper.c_str(), itFileMd5->RemoteFileName.c_str());
 					UPrintf(USTR("\n"));
@@ -163,7 +163,7 @@ int UMain(int argc, UChar* argv[])
 			}
 		}
 	}
-	UPrintf(USTR("%d:\n"), vFileMd5.size() - 1);
+	UPrintf(USTR("%d:\n"), static_cast<n32>(vFileMd5.size() - 1));
 	UPrintf(USTR("L   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->LocalFileMd5Upper.c_str(), itFileMd5->LocalFileName.c_str());
 	UPrintf(USTR("R   %") PRIUS USTR(" %") PRIUS USTR("\n"), itFileMd5->RemoteFileMd5Upper.c_str(), itFileMd5->RemoteFileName.c_str());
 	UPrintf(USTR("\n"));

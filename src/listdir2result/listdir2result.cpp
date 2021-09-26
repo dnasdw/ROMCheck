@@ -106,10 +106,10 @@ int UMain(int argc, UChar* argv[])
 				}
 				if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
 				{
-					string sDir = sParent + "/" + pDirent->d_name;
+					string sDir = sParent + "/" + sName;
 					if (nDepth == nDepthMax)
 					{
-						if (!mDir.insert(make_pair(UToU8(pDirent->d_name), sDir).second))
+						if (!mDir.insert(make_pair(UToU8(sName), sDir)).second)
 						{
 							return 1;
 						}

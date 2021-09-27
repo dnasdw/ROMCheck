@@ -406,9 +406,9 @@ bool CSwitchGamesXlsx::empty(const string& a_sLine)
 bool CSwitchGamesXlsx::pathCompare(const UString& lhs, const UString& rhs)
 {
 	wstring sLhs = UToW(lhs);
-	transform(sLhs.begin(), sLhs.end(), sLhs.begin(), toupper);
+	transform(sLhs.begin(), sLhs.end(), sLhs.begin(), ::towupper);
 	wstring sRhs = UToW(rhs);
-	transform(sRhs.begin(), sRhs.end(), sRhs.begin(), toupper);
+	transform(sRhs.begin(), sRhs.end(), sRhs.begin(), ::towupper);
 	return sLhs < sRhs;
 }
 
@@ -2562,7 +2562,7 @@ int CSwitchGamesXlsx::sortTable()
 			n32 nRowIndex = itRow->first;
 			map<n32, pair<bool, wstring>>& mColumnText = mRowColumnText[nRowIndex];
 			wstring sColumnTextUpper = mColumnText[0].second;
-			transform(sColumnTextUpper.begin(), sColumnTextUpper.end(), sColumnTextUpper.begin(), ::toupper);
+			transform(sColumnTextUpper.begin(), sColumnTextUpper.end(), sColumnTextUpper.begin(), ::towupper);
 			vOrder.push_back(make_pair(nRowIndex, sColumnTextUpper));
 		}
 		stable_sort(vOrder.begin() + 2, vOrder.end(), rowColumnTextCompare);

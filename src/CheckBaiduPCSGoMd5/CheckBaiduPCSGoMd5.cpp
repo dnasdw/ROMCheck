@@ -140,7 +140,7 @@ int UMain(int argc, UChar* argv[])
 			{
 				return 1;
 			}
-			vector<UString> vLine = SplitOf(sLine, USTR(" "));
+			vector<UString> vLine = Split(sLine, USTR(" "));
 			vector<UString>::iterator itLine = remove_if(vLine.begin(), vLine.end(), empty);
 			vLine.erase(itLine, vLine.end());
 			if (bLocal)

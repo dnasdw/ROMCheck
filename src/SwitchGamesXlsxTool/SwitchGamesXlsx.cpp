@@ -733,9 +733,9 @@ int CSwitchGamesXlsx::readConfig()
 	{
 		return 1;
 	}
-	tinyxml2::XMLElement* pDocConfig = xmlDoc.FirstChildElement("config");
-	tinyxml2::XMLElement* pConfigSheets = pDocConfig->FirstChildElement("sheets");
-	for (tinyxml2::XMLElement* pSheetsSheet = pConfigSheets->FirstChildElement("sheet"); pSheetsSheet != nullptr; pSheetsSheet = pSheetsSheet->NextSiblingElement("sheet"))
+	const tinyxml2::XMLElement* pDocConfig = xmlDoc.FirstChildElement("config");
+	const tinyxml2::XMLElement* pConfigSheets = pDocConfig->FirstChildElement("sheets");
+	for (const tinyxml2::XMLElement* pSheetsSheet = pConfigSheets->FirstChildElement("sheet"); pSheetsSheet != nullptr; pSheetsSheet = pSheetsSheet->NextSiblingElement("sheet"))
 	{
 		wstring sSheetText;
 		const char* pSheetText = pSheetsSheet->GetText();
@@ -779,7 +779,7 @@ int CSwitchGamesXlsx::readWorkbook()
 	{
 		return 1;
 	}
-	tinyxml2::XMLElement* pDocWorkbook = xmlDoc.RootElement();
+	const tinyxml2::XMLElement* pDocWorkbook = xmlDoc.RootElement();
 	if (pDocWorkbook == nullptr)
 	{
 		return 1;
@@ -789,10 +789,10 @@ int CSwitchGamesXlsx::readWorkbook()
 	{
 		return 1;
 	}
-	tinyxml2::XMLElement* pWorkbookBookViews = pDocWorkbook->FirstChildElement("bookViews");
+	const tinyxml2::XMLElement* pWorkbookBookViews = pDocWorkbook->FirstChildElement("bookViews");
 	if (pWorkbookBookViews != nullptr)
 	{
-		tinyxml2::XMLElement* pBookViewsWorkbookView = pWorkbookBookViews->FirstChildElement("workbookView");
+		const tinyxml2::XMLElement* pBookViewsWorkbookView = pWorkbookBookViews->FirstChildElement("workbookView");
 		if (pBookViewsWorkbookView != nullptr)
 		{
 			const char* pWorkbookViewActiveTab = pBookViewsWorkbookView->Attribute("activeTab");
@@ -1040,7 +1040,7 @@ int CSwitchGamesXlsx::readSharedStrings()
 	}
 	if (m_bResave)
 	{
-		for (map<n32, wstring>::iterator it = m_mSharedStrings.begin(); it != m_mSharedStrings.end(); ++it)
+		for (map<n32, wstring>::const_iterator it = m_mSharedStrings.begin(); it != m_mSharedStrings.end(); ++it)
 		{
 			const wstring& sText = it->second;
 			m_mSharedStringsIndexNew.insert(make_pair(sText, -1));
@@ -1082,7 +1082,7 @@ int CSwitchGamesXlsx::readStyles()
 	{
 		return 1;
 	}
-	tinyxml2::XMLElement* pDocStyleSheet = xmlDoc.RootElement();
+	const tinyxml2::XMLElement* pDocStyleSheet = xmlDoc.RootElement();
 	if (pDocStyleSheet == nullptr)
 	{
 		return 1;
@@ -1092,16 +1092,16 @@ int CSwitchGamesXlsx::readStyles()
 	{
 		return 1;
 	}
-	tinyxml2::XMLElement* pStyleSheetFills = pDocStyleSheet->FirstChildElement("fills");
+	const tinyxml2::XMLElement* pStyleSheetFills = pDocStyleSheet->FirstChildElement("fills");
 	if (pStyleSheetFills == nullptr)
 	{
 		return 1;
 	}
 	map<n32, n32> mFillOldToNew;
 	n32 nFillIndexOld = 0;
-	for (tinyxml2::XMLElement* pFillsFill = pStyleSheetFills->FirstChildElement("fill"); pFillsFill != nullptr; pFillsFill = pFillsFill->NextSiblingElement("fill"))
+	for (const tinyxml2::XMLElement* pFillsFill = pStyleSheetFills->FirstChildElement("fill"); pFillsFill != nullptr; pFillsFill = pFillsFill->NextSiblingElement("fill"))
 	{
-		tinyxml2::XMLElement* pFillPatternFill = pFillsFill->FirstChildElement("patternFill");
+		const tinyxml2::XMLElement* pFillPatternFill = pFillsFill->FirstChildElement("patternFill");
 		if (pFillPatternFill == nullptr)
 		{
 			return 1;
@@ -1127,7 +1127,7 @@ int CSwitchGamesXlsx::readStyles()
 		}
 		else
 		{
-			tinyxml2::XMLElement* pPatternFillFgColor = pFillPatternFill->FirstChildElement("fgColor");
+			const tinyxml2::XMLElement* pPatternFillFgColor = pFillPatternFill->FirstChildElement("fgColor");
 			if (pPatternFillFgColor == nullptr)
 			{
 				mFillOldToNew[nFillIndexOld++] = kFillIdRed;
@@ -1187,13 +1187,13 @@ int CSwitchGamesXlsx::readStyles()
 			}
 		}
 	}
-	tinyxml2::XMLElement* pStyleSheetCellXfs = pDocStyleSheet->FirstChildElement("cellXfs");
+	const tinyxml2::XMLElement* pStyleSheetCellXfs = pDocStyleSheet->FirstChildElement("cellXfs");
 	if (pStyleSheetCellXfs == nullptr)
 	{
 		return 1;
 	}
 	n32 nXfIndexOld = 0;
-	for (tinyxml2::XMLElement* pCellXfsXf = pStyleSheetCellXfs->FirstChildElement("xf"); pCellXfsXf != nullptr; pCellXfsXf = pCellXfsXf->NextSiblingElement("xf"))
+	for (const tinyxml2::XMLElement* pCellXfsXf = pStyleSheetCellXfs->FirstChildElement("xf"); pCellXfsXf != nullptr; pCellXfsXf = pCellXfsXf->NextSiblingElement("xf"))
 	{
 		n32 nXfFillId = kFillIdNone;
 		bool bXfApplyFill = false;
@@ -1251,7 +1251,7 @@ int CSwitchGamesXlsx::readStyles()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveRels()
+int CSwitchGamesXlsx::resaveRels() const
 {
 	if (!m_bResave)
 	{
@@ -1520,7 +1520,7 @@ int CSwitchGamesXlsx::resaveCore()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveWorkbookRels()
+int CSwitchGamesXlsx::resaveWorkbookRels() const
 {
 	if (!m_bResave)
 	{
@@ -1576,7 +1576,7 @@ int CSwitchGamesXlsx::resaveWorkbookRels()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveTheme1()
+int CSwitchGamesXlsx::resaveTheme1() const
 {
 	if (!m_bResave)
 	{
@@ -2028,9 +2028,9 @@ int CSwitchGamesXlsx::readSheet()
 	}
 	if (m_bResave)
 	{
-		for (vector<wstring>::iterator it = m_vSheetName.begin(); it != m_vSheetName.end(); ++it)
+		for (vector<wstring>::const_iterator it = m_vSheetName.begin(); it != m_vSheetName.end(); ++it)
 		{
-			wstring& sTableName = *it;
+			const wstring& sTableName = *it;
 			SSheetInfo& sheetInfo = mSheetInfo[sTableName];
 			map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 			mRowStyle[0] = kStyleIdBlueBold;
@@ -2104,22 +2104,22 @@ int CSwitchGamesXlsx::writeSheet()
 		sSheetXml += Format("<col min=\"%d\" max=\"16384\" width=\"9\" style=\"%d\"/>", sheetInfo.ColumnCount + 1, kStyleIdNone);
 		sSheetXml += "</cols>";
 		sSheetXml += "<sheetData>";
-		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
+		for (map<n32, map<n32, pair<bool, wstring>>>::const_iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
 		{
 			n32 nRowIndex = itRow->first;
-			map<n32, pair<bool, wstring>>& mColumnText = itRow->second;
+			const map<n32, pair<bool, wstring>>& mColumnText = itRow->second;
 			n32 nRowStyle = mRowStyle[nRowIndex];
 			sSheetXml += Format("<row r=\"%d\" spans=\"1:%d\" s=\"%d\" customFormat=\"1\" x14ac:dyDescent=\"0.2\">", nRowIndex + 1, sheetInfo.ColumnCount, nRowStyle);
-			for (map<n32, pair<bool, wstring>>::iterator itColumn = mColumnText.begin(); itColumn != mColumnText.end(); ++itColumn)
+			for (map<n32, pair<bool, wstring>>::const_iterator itColumn = mColumnText.begin(); itColumn != mColumnText.end(); ++itColumn)
 			{
 				n32 nColumnIndex = itColumn->first;
-				pair<bool, wstring>& pText = itColumn->second;
+				const pair<bool, wstring>& pText = itColumn->second;
 				if (!pText.first)
 				{
 					continue;
 				}
 				m_nSstCount++;
-				wstring& sText = pText.second;
+				const wstring& sText = pText.second;
 				sSheetXml += Format("<c r=\"%s\" s=\"%d\" t=\"s\">", encodePosition(nRowIndex, nColumnIndex).c_str(), nRowStyle);
 				sSheetXml += Format("<v>%d</v>", m_mSharedStringsIndexNew[sText]);
 				sSheetXml += "</c>";
@@ -2143,13 +2143,13 @@ int CSwitchGamesXlsx::writeSheet()
 	return 0;
 }
 
-int CSwitchGamesXlsx::writeSharedStrings()
+int CSwitchGamesXlsx::writeSharedStrings() const
 {
 	UString sSharedStringsXmlPath = m_sXlsxDirName + USTR("/xl/sharedStrings.xml");
 	string sSharedStringsXml;
 	sSharedStringsXml += "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n";
 	sSharedStringsXml += Format("<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"%d\" uniqueCount=\"%d\">", m_nSstCount, static_cast<n32>(m_mSharedStringsIndexNew.size()));
-	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); ++it)
+	for (map<wstring, n32>::const_iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); ++it)
 	{
 		string sTextU8 = WToU8(it->first);
 		sSharedStringsXml += "<si>";
@@ -2170,7 +2170,7 @@ int CSwitchGamesXlsx::writeSharedStrings()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveStyles()
+int CSwitchGamesXlsx::resaveStyles() const
 {
 	if (!m_bResave)
 	{
@@ -2185,7 +2185,7 @@ int CSwitchGamesXlsx::resaveStyles()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveWorkbook()
+int CSwitchGamesXlsx::resaveWorkbook() const
 {
 	if (!m_bResave)
 	{
@@ -2246,7 +2246,7 @@ int CSwitchGamesXlsx::resaveWorkbook()
 	return 0;
 }
 
-int CSwitchGamesXlsx::resaveContentTypes()
+int CSwitchGamesXlsx::resaveContentTypes() const
 {
 	if (!m_bResave)
 	{
@@ -2341,7 +2341,7 @@ int CSwitchGamesXlsx::readTable()
 		{
 			*it = trim(*it);
 		}
-		vector<string>::iterator itTable = remove_if(vTable.begin(), vTable.end(), empty);
+		vector<string>::const_iterator itTable = remove_if(vTable.begin(), vTable.end(), empty);
 		vTable.erase(itTable, vTable.end());
 		bool bReadTable = false;
 		n32 nRowIndex = 0;
@@ -2489,7 +2489,7 @@ int CSwitchGamesXlsx::writeTable()
 		fprintf(fp, "[ActiveCellRowIndex]\t%d\r\n", sheetInfo.ActiveCellRowIndex);
 		fprintf(fp, "[ActiveCellColumnIndex]\t%d\r\n", sheetInfo.ActiveCellColumnIndex);
 		fprintf(fp, "[Width]");
-		for (vector<n32>::iterator it = sheetInfo.Width.begin(); it != sheetInfo.Width.end(); ++it)
+		for (vector<n32>::const_iterator it = sheetInfo.Width.begin(); it != sheetInfo.Width.end(); ++it)
 		{
 			n32 nWidth = *it;
 			fprintf(fp, "\t%d", nWidth);
@@ -2586,7 +2586,7 @@ int CSwitchGamesXlsx::sortTable()
 		mRowStyleTemp.swap(mRowStyle);
 		map<n32, map<n32, pair<bool, wstring>>> mRowColumnTextTemp;
 		mRowColumnTextTemp.swap(mRowColumnText);
-		for (map<n32, n32>::iterator itRowIndex = mRowIndexOldToNew.begin(); itRowIndex != mRowIndexOldToNew.end(); ++itRowIndex)
+		for (map<n32, n32>::const_iterator itRowIndex = mRowIndexOldToNew.begin(); itRowIndex != mRowIndexOldToNew.end(); ++itRowIndex)
 		{
 			n32 nRowIndexOld = itRowIndex->first;
 			n32 nRowIndexNew = itRowIndex->second;
@@ -2610,7 +2610,7 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			continue;
 		}
-		UString sPath = WToU(result.Path);
+		UString sDirPath = WToU(result.Path);
 		const wstring& sType = result.Type;
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sType];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sType];
@@ -2626,13 +2626,13 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (nRowIndex < 0)
 		{
-			UPrintf(USTR("NOT in table %") PRIUS USTR(": %") PRIUS USTR("\n"), WToU(sType).c_str(), sPath.c_str());
+			UPrintf(USTR("NOT in table %") PRIUS USTR(": %") PRIUS USTR("\n"), WToU(sType).c_str(), sDirPath.c_str());
 			continue;
 		}
-		UString::size_type uPrefixSize = sPath.size() + 1;
+		UString::size_type uPrefixSize = sDirPath.size() + 1;
 		vector<UString> vFile;
 		queue<UString> qDir;
-		qDir.push(sPath);
+		qDir.push(sDirPath);
 		while (!qDir.empty())
 		{
 			UString& sParent = qDir.front();
@@ -2688,12 +2688,12 @@ int CSwitchGamesXlsx::checkTable()
 					}
 					if (pDirent->d_type == DT_REG)
 					{
-						string sFileName = sParent + "/" + pDirent->d_name;
+						string sFileName = sParent + "/" + sName;
 						vFile.push_back(sFileName.substr(uPrefixSize));
 					}
 					else if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
 					{
-						string sDir = sParent + "/" + pDirent->d_name;
+						string sDir = sParent + "/" + sName;
 						qDir.push(sDir);
 					}
 				}
@@ -2703,9 +2703,9 @@ int CSwitchGamesXlsx::checkTable()
 			qDir.pop();
 		}
 		sort(vFile.begin(), vFile.end(), pathCompare);
-		for (vector<UString>::iterator itFile = vFile.begin(); itFile != vFile.end(); ++itFile)
+		for (vector<UString>::const_iterator itFile = vFile.begin(); itFile != vFile.end(); ++itFile)
 		{
-			UString& sFile = *itFile;
+			const UString& sFile = *itFile;
 			UString::size_type uPos = sFile.rfind(USTR('.'));
 			if (uPos == UString::npos)
 			{
@@ -2742,7 +2742,7 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (result.NfoFile.size() > 1)
 		{
-			UPrintf(USTR("nfo COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.NfoFile.size()), sPath.c_str());
+			UPrintf(USTR("nfo COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.NfoFile.size()), sDirPath.c_str());
 			for (n32 i = 0; i < static_cast<n32>(result.NfoFile.size()); i++)
 			{
 				UPrintf(USTR("nfo[%d]: %") PRIUS USTR("\n"), i, result.NfoFile[i].c_str());
@@ -2751,7 +2751,7 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (result.SfvFile.size() > 1)
 		{
-			UPrintf(USTR("sfv COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.SfvFile.size()), sPath.c_str());
+			UPrintf(USTR("sfv COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.SfvFile.size()), sDirPath.c_str());
 			for (n32 i = 0; i < static_cast<n32>(result.SfvFile.size()); i++)
 			{
 				UPrintf(USTR("sfv[%d]: %") PRIUS USTR("\n"), i, result.SfvFile[i].c_str());
@@ -2760,7 +2760,7 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (result.OtherFile.size() > 1)
 		{
-			UPrintf(USTR("other COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.OtherFile.size()), sPath.c_str());
+			UPrintf(USTR("other COUNT %d > 1: %") PRIUS USTR("\n"), static_cast<n32>(result.OtherFile.size()), sDirPath.c_str());
 			for (n32 i = 0; i < static_cast<n32>(result.OtherFile.size()); i++)
 			{
 				UPrintf(USTR("other[%d]: %") PRIUS USTR("\n"), i, result.OtherFile[i].c_str());
@@ -2772,9 +2772,9 @@ int CSwitchGamesXlsx::checkTable()
 		UString sPatchDirName = m_sTableDirName + USTR("/") + WToU(sType + L"/" + sName);
 		if (!result.NfoFile.empty())
 		{
-			UString sFilePath = sPath + USTR("/") + result.NfoFile[0];
+			UString sFilePath = sDirPath + USTR("/") + result.NfoFile[0];
 			STextFileContent textFileContent;
-			if (readTextFile(sFilePath, textFileContent))
+			if (readTextFile(sFilePath, textFileContent) != 0)
 			{
 				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
 				mRowStyle[nRowIndex] = kStyleIdRed;
@@ -2820,9 +2820,9 @@ int CSwitchGamesXlsx::checkTable()
 		}
 		if (!result.SfvFile.empty())
 		{
-			UString sFilePath = sPath + USTR("/") + result.SfvFile[0];
+			UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
 			STextFileContent textFileContent;
-			if (readTextFile(sFilePath, textFileContent))
+			if (readTextFile(sFilePath, textFileContent) != 0)
 			{
 				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
 				mRowStyle[nRowIndex] = kStyleIdRed;
@@ -2896,7 +2896,7 @@ int CSwitchGamesXlsx::readResult()
 	{
 		*itResultText = trim(*itResultText);
 	}
-	vector<string>::iterator itResultText = remove_if(vResultText.begin(), vResultText.end(), empty);
+	vector<string>::const_iterator itResultText = remove_if(vResultText.begin(), vResultText.end(), empty);
 	vResultText.erase(itResultText, vResultText.end());
 	if (!vResultText.empty())
 	{
@@ -2980,7 +2980,7 @@ void CSwitchGamesXlsx::updateSharedStrings()
 			}
 		}
 	}
-	for (map<wstring, n32>::iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); /*it*/)
+	for (map<wstring, n32>::const_iterator it = m_mSharedStringsIndexNew.begin(); it != m_mSharedStringsIndexNew.end(); /*it*/)
 	{
 		if (it->second < 0)
 		{
@@ -3018,11 +3018,11 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			}
 		}
 		n32 nRowIndex = -1;
-		UString sPath = m_sTableDirName + USTR("/") + WToU(m_vSheetName[i]);
+		UString sRootPath = m_sTableDirName + USTR("/") + WToU(sType);
 		UString::size_type uPrefixSize = m_sTableDirName.size() + 1;
 		vector<pair<UString, bool>>& vFile = m_vPatchFileList;
 		queue<pair<UString, bool>> qDir;
-		qDir.push(make_pair(sPath, false));
+		qDir.push(make_pair(sRootPath, false));
 		while (!qDir.empty())
 		{
 			UString& sParent = qDir.front().first;
@@ -3034,7 +3034,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			hFind = FindFirstFileW(sPattern.c_str(), &ffd);
 			if (hFind != INVALID_HANDLE_VALUE)
 			{
-				if (sParent == sPath)
+				if (sParent == sRootPath)
 				{
 					m_vPatchTypeList.push_back(sType);
 				}
@@ -3048,7 +3048,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 					else if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 && wcscmp(ffd.cFileName, L".") != 0 && wcscmp(ffd.cFileName, L"..") != 0)
 					{
 						wstring sDir = ffd.cFileName;
-						map<UString, n32>::iterator itDir = mDirIndex.find(sDir);
+						map<UString, n32>::const_iterator itDir = mDirIndex.find(sDir);
 						if (itDir == mDirIndex.end())
 						{
 							FindClose(hFind);
@@ -3061,7 +3061,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 							return 1;
 						}
 						bool bStyleIsGreen = false;
-						if (sParent == sPath)
+						if (sParent == sRootPath)
 						{
 							bStyleIsGreen = mRowStyle[nRowIndex] == kStyleIdGreen;
 						}
@@ -3075,7 +3075,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 			DIR* pDir = opendir(sParent.c_str());
 			if (pDir != nullptr)
 			{
-				if (sParent == sPath)
+				if (sParent == sRootPath)
 				{
 					m_vPatchTypeList.push_back(WToU(sType));
 				}
@@ -3105,13 +3105,13 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 					}
 					if (pDirent->d_type == DT_REG)
 					{
-						string sFileName = sParent + "/" + pDirent->d_name;
+						string sFileName = sParent + "/" + sName;
 						vFile.push_back(make_pair(sFileName.substr(uPrefixSize), bParentStyleIsGreen));
 					}
 					else if (pDirent->d_type == DT_DIR && strcmp(pDirent->d_name, ".") != 0 && strcmp(pDirent->d_name, "..") != 0)
 					{
-						string sDir = pDirent->d_name;
-						map<UString, n32>::iterator itDir = mDirIndex.find(sDir);
+						string sDir = sName;
+						map<UString, n32>::const_iterator itDir = mDirIndex.find(sDir);
 						if (itDir == mDirIndex.end())
 						{
 							closedir(pDir);
@@ -3124,7 +3124,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 							return 1;
 						}
 						bool bStyleIsGreen = false;
-						if (sParent == sPath)
+						if (sParent == sRootPath)
 						{
 							bStyleIsGreen = mRowStyle[nRowIndex] == kStyleIdGreen;
 						}
@@ -3142,7 +3142,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 	return 0;
 }
 
-int CSwitchGamesXlsx::makeRclonePatchBat()
+int CSwitchGamesXlsx::makeRclonePatchBat() const
 {
 	UString sTableDirName = m_sTableDirName;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
@@ -3165,7 +3165,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat()
 	}
 	fprintf(fp, "CHCP 65001\r\n");
 	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
-	for (vector<UString>::iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
+	for (vector<UString>::const_iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
 	{
 		string sDirName = UToU8(*it);
 		fprintf(fp, "rclone copy \"%s/%s\" \"%s/%s\" --checksum -P --drive-server-side-across-configs\r\n", sSrcPrefix.c_str(), sDirName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
@@ -3181,7 +3181,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat()
 	}
 	fprintf(fp, "CHCP 65001\r\n");
 	fprintf(fp, "PUSHD \"%%~dp0\"\r\n");
-	for (vector<UString>::iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
+	for (vector<UString>::const_iterator it = m_vPatchTypeList.begin(); it != m_vPatchTypeList.end(); ++it)
 	{
 		string sDirName = UToU8(*it);
 		fprintf(fp, "rclone check \"%s/%s\" \"%s/%s\" --one-way --checksum -P --drive-server-side-across-configs || PAUSE\r\n", sSrcPrefix.c_str(), sDirName.c_str(), sDestPrefix.c_str(), sDirName.c_str());
@@ -3192,7 +3192,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat()
 	return 0;
 }
 
-int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
+int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 {
 	UString sTableDirName = m_sTableDirName;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
@@ -3225,7 +3225,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
 		return 1;
 	}
 	fprintf(fp, "su %s\r\n", UToU8(m_sBaiduUserId).c_str());
-	for (vector<pair<UString, bool>>::iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
+	for (vector<pair<UString, bool>>::const_iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
 	{
 		if (it->second == m_bStyleIsGreen)
 		{
@@ -3275,7 +3275,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat()
 	}
 	fprintf(fp, "su %s\r\n", UToU8(m_sBaiduUserId).c_str());
 	fprintf(fp, "who\r\n");
-	for (vector<pair<UString, bool>>::iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
+	for (vector<pair<UString, bool>>::const_iterator it = m_vPatchFileList.begin(); it != m_vPatchFileList.end(); ++it)
 	{
 		if (it->second == m_bStyleIsGreen)
 		{

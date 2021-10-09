@@ -145,6 +145,7 @@ private:
 	int checkTable();
 	int readResult();
 	void updateSharedStrings();
+	bool matchGreenStyle(const wstring& a_sName) const;
 	int makePatchTypeFileList();
 	int makeRclonePatchBat() const;
 	int makeBaiduPCSGoPatchBat() const;
@@ -159,6 +160,8 @@ private:
 	UString m_sModuleDirName;
 	vector<wstring> m_vSheetName;
 	set<wstring> m_sSheetName;
+	vector<wregex> m_vGreenStyleNamePattern;
+	vector<wregex> m_vNotGreenStyleNamePattern;
 	map<wstring, n32> m_mSheetIndexOld;
 	string m_sCreator;
 	string m_sLastModifiedBy;

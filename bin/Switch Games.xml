@@ -10,4 +10,73 @@
         <sheet>nuked_update</sheet>
         <sheet>nuked_dlc</sheet>
     </sheets>
+    <green>
+        <name>1.2.switch</name>
+        <name>51.worldwide.(classics|games)</name>
+        <name>advance.wars</name>
+        <name>animal.crossing</name>
+        <name>arms</name>
+        <name>astral.chain</name>
+        <name>bayonetta</name>
+        <!-- <name>big.brain.academy</name> -->
+        <name>boxboy</name>
+        <name>bravely.default</name>
+        <name>buddy.mission.bond</name>
+        <name>captain.toad</name>
+        <name>daemon.x.machina</name>
+        <name>dc.super.hero.girls</name>
+        <name>donkey.kong</name>
+        <name>dr.kawashimas.brain.training</name>
+        <name>dragon.quest.builders</name>
+        <name>dragon.quest.xi</name>
+        <name>famicom.(detective|tantei).club</name>
+        <name>family.computer</name>
+        <name>fire.emblem</name>
+        <name>(fit|fitness).boxing</name>
+        <name>flip.wars</name>
+        <name>game.builder.garage</name>
+        <name>go.vacation</name>
+        <name>good.job</name>
+        <name>hyrule</name>
+        <name>jump.rope.challenge</name>
+        <name>karaoke.joysound</name>
+        <name>kirby</name>
+        <name>luigis</name>
+        <name>mario</name>
+        <name>marvel.ultimate.alliance</name>
+        <name>metroid</name>
+        <name>miitopia</name>
+        <name>nintendo.entertainment.system</name>
+        <name>nintendo.labo</name>
+        <name>octopath.traveler</name>
+        <name>pikmin</name>
+        <name>pokemon</name>
+        <name>pokken</name>
+        <name>retail.interactive.display.menu</name>
+        <name>ring.fit.adventure</name>
+        <name>shin.megami.tensei.v</name>
+        <name>snipperclips</name>
+        <name>splatoon</name>
+        <name>subarashiki.kono.sekai</name>
+        <name>super.famicom</name>
+        <name>super.smash.bros</name>
+        <name>sushi.striker</name>
+        <name>tetris.99</name>
+        <name>tokyo.mirage.sessions.fe</name>
+        <name>the.legend.of.zelda</name>
+        <name>the.stretchers</name>
+        <name>the.world.ends.with.you</name>
+        <name>triangle.strategy</name>
+        <!-- <name>part.time.ufo</name> -->
+        <name>warioware</name>
+        <name>xenoblade</name>
+        <name>yoshis</name>
+        <exclude>
+            <!-- (?<!arcade.archives.*)donkey.kong -->
+            <!-- <name>arcade.archives.*donkey.kong</name> -->
+            <!-- (?<!arcade.archives.*)mario -->
+            <!-- <name>arcade.archives.*mario</name> -->
+            <name>arcade.archives</name>
+        </exclude>
+    </green>
 </config>

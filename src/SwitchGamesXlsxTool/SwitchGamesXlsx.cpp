@@ -734,7 +734,15 @@ int CSwitchGamesXlsx::readConfig()
 		return 1;
 	}
 	const tinyxml2::XMLElement* pDocConfig = xmlDoc.FirstChildElement("config");
+	if (pDocConfig == nullptr)
+	{
+		return 1;
+	}
 	const tinyxml2::XMLElement* pConfigSheets = pDocConfig->FirstChildElement("sheets");
+	if (pConfigSheets == nullptr)
+	{
+		return 1;
+	}
 	for (const tinyxml2::XMLElement* pSheetsSheet = pConfigSheets->FirstChildElement("sheet"); pSheetsSheet != nullptr; pSheetsSheet = pSheetsSheet->NextSiblingElement("sheet"))
 	{
 		wstring sSheetText;
@@ -747,6 +755,61 @@ int CSwitchGamesXlsx::readConfig()
 		if (m_bResave)
 		{
 			m_sSheetName.insert(sSheetText);
+		}
+	}
+	const tinyxml2::XMLElement* pConfigGreen = pDocConfig->FirstChildElement("green");
+	if (pConfigGreen == nullptr)
+	{
+		return 1;
+	}
+	for (const tinyxml2::XMLElement* pGreenName = pConfigGreen->FirstChildElement("name"); pGreenName != nullptr; pGreenName = pGreenName->NextSiblingElement("name"))
+	{
+		wstring sNameText;
+		const char* pNameText = pGreenName->GetText();
+		if (pNameText != nullptr)
+		{
+			sNameText = U8ToW(pNameText);
+		}
+		if (sNameText.empty())
+		{
+			continue;
+		}
+		try
+		{
+			wregex rPattern(sNameText, regex_constants::ECMAScript | regex_constants::icase);
+			m_vGreenStyleNamePattern.push_back(rPattern);
+		}
+		catch (regex_error& e)
+		{
+			UPrintf(USTR("%") PRIUS USTR(" regex error: %") PRIUS USTR("\n\n"), WToU(sNameText).c_str(), AToU(e.what()).c_str());
+			continue;
+		}
+	}
+	const tinyxml2::XMLElement* pGreenExclude = pConfigGreen->FirstChildElement("exclude");
+	if (pGreenExclude != nullptr)
+	{
+		for (const tinyxml2::XMLElement* pExcludeName = pGreenExclude->FirstChildElement("name"); pExcludeName != nullptr; pExcludeName = pExcludeName->NextSiblingElement("name"))
+		{
+			wstring sNameText;
+			const char* pNameText = pExcludeName->GetText();
+			if (pNameText != nullptr)
+			{
+				sNameText = U8ToW(pNameText);
+			}
+			if (sNameText.empty())
+			{
+				continue;
+			}
+			try
+			{
+				wregex rPattern(sNameText, regex_constants::ECMAScript | regex_constants::icase);
+				m_vNotGreenStyleNamePattern.push_back(rPattern);
+			}
+			catch (regex_error& e)
+			{
+				UPrintf(USTR("%") PRIUS USTR(" regex error: %") PRIUS USTR("\n\n"), WToU(sNameText).c_str(), AToU(e.what()).c_str());
+				continue;
+			}
 		}
 	}
 	return 0;
@@ -2599,6 +2662,7 @@ int CSwitchGamesXlsx::sortTable()
 
 int CSwitchGamesXlsx::checkTable()
 {
+	bool bAllExist = true;
 	n32 nCheckIndex = 1;
 	for (vector<SResult>::iterator itResult = m_vResult.begin(); itResult != m_vResult.end(); ++itResult)
 	{
@@ -2608,6 +2672,7 @@ int CSwitchGamesXlsx::checkTable()
 		nCheckIndex++;
 		if (!result.Exist)
 		{
+			bAllExist = false;
 			continue;
 		}
 		UString sDirPath = WToU(result.Path);
@@ -2628,6 +2693,48 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			UPrintf(USTR("NOT in table %") PRIUS USTR(": %") PRIUS USTR("\n"), WToU(sType).c_str(), sDirPath.c_str());
 			continue;
+		}
+		if (matchGreenStyle(sName))
+		{
+			if (mRowStyle[nRowIndex] != kStyleIdGreen)
+			{
+				if (mRowStyle[nRowIndex] != kStyleIdRed)
+				{
+					mRowStyle[nRowIndex] = kStyleIdGreen;
+				}
+				else
+				{
+					mRowStyle[nRowIndex] = kStyleIdRed;
+				}
+			}
+		}
+		else
+		{
+			if (mRowStyle[nRowIndex] == kStyleIdGreen)
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+			if (bAllExist)
+			{
+				if (mRowStyle[nRowIndex] != kStyleIdYellow)
+				{
+					if (mRowStyle[nRowIndex] != kStyleIdRed)
+					{
+						mRowStyle[nRowIndex] = kStyleIdYellow;
+					}
+					else
+					{
+						mRowStyle[nRowIndex] = kStyleIdRed;
+					}
+				}
+			}
+			else
+			{
+				if (mRowStyle[nRowIndex] == kStyleIdYellow)
+				{
+					mRowStyle[nRowIndex] = kStyleIdRed;
+				}
+			}
 		}
 		UString::size_type uPrefixSize = sDirPath.size() + 1;
 		vector<UString> vFile;
@@ -2996,6 +3103,25 @@ void CSwitchGamesXlsx::updateSharedStrings()
 	{
 		it->second = nSharedStringsIndexNew++;
 	}
+}
+
+bool CSwitchGamesXlsx::matchGreenStyle(const wstring& a_sName) const
+{
+	for (vector<wregex>::const_iterator itGreen = m_vGreenStyleNamePattern.begin(); itGreen != m_vGreenStyleNamePattern.end(); ++itGreen)
+	{
+		if (regex_search(a_sName, *itGreen))
+		{
+			for (vector<wregex>::const_iterator itNotGreen = m_vNotGreenStyleNamePattern.begin(); itNotGreen != m_vNotGreenStyleNamePattern.end(); ++itNotGreen)
+			{
+				if (regex_search(a_sName, *itNotGreen))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+	return false;
 }
 
 int CSwitchGamesXlsx::makePatchTypeFileList()

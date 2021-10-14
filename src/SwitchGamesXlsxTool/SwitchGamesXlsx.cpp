@@ -10,7 +10,8 @@ CSwitchGamesXlsx::STextFileContent::STextFileContent()
 }
 
 CSwitchGamesXlsx::CSwitchGamesXlsx()
-	: m_bStyleIsGreen(true)
+	: m_nCheckLevel(kCheckLevelName)
+	, m_bStyleIsGreen(true)
 	, m_bResave(false)
 	, m_bCompact(false)
 	, m_nActiveTabOld(0)
@@ -37,6 +38,11 @@ void CSwitchGamesXlsx::SetTableDirName(const UString& a_sTableDirName)
 void CSwitchGamesXlsx::SetResultFileName(const UString& a_sResultFileName)
 {
 	m_sResultFileName = a_sResultFileName;
+}
+
+void CSwitchGamesXlsx::SetCheckLevel(n32 a_nCheckLevel)
+{
+	m_nCheckLevel = a_nCheckLevel;
 }
 
 void CSwitchGamesXlsx::SetRemoteDirName(const UString& a_sRemoteDirName)
@@ -2736,6 +2742,10 @@ int CSwitchGamesXlsx::checkTable()
 				}
 			}
 		}
+		if (m_nCheckLevel <= kCheckLevelName)
+		{
+			continue;
+		}
 		UString::size_type uPrefixSize = sDirPath.size() + 1;
 		vector<UString> vFile;
 		queue<UString> qDir;
@@ -2822,7 +2832,35 @@ int CSwitchGamesXlsx::checkTable()
 			UString sExtName = sFile.substr(uPos + 1);
 			if (sExtName == USTR("rar"))
 			{
-				result.RarFile[sFile] = 0;
+				if (m_nCheckLevel <= kCheckLevelCRLF)
+				{
+					result.RarFile[sFile] = 0;
+				}
+				else
+				{
+					UString sFilePath = sDirPath + USTR("/") + sFile;
+					FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+					if (fp == nullptr)
+					{
+						return 1;
+					}
+					Fseek(fp, 0, SEEK_END);
+					n64 nFileSize = Ftell(fp);
+					Fseek(fp, 0, SEEK_SET);
+					static const u32 c_uBufferSize = 0x01000000;
+					static vector<u8> c_vBin(c_uBufferSize);
+					u32 uCRC32 = 0;
+					while (nFileSize > 0)
+					{
+						u32 uSize = nFileSize >= c_uBufferSize ? c_uBufferSize : static_cast<u32>(nFileSize);
+						fread(&*c_vBin.begin(), 1, uSize, fp);
+						uCRC32 = UpdateCRC32(&*c_vBin.begin(), uSize, uCRC32);
+						nFileSize -= uSize;
+					}
+					fclose(fp);
+					result.RarFile[sFile] = uCRC32;
+					UPrintf(USTR("%") PRIUS USTR(" %08x\n"), sFile.c_str(), uCRC32);
+				}
 			}
 			if (sExtName == USTR("nfo"))
 			{
@@ -2978,6 +3016,66 @@ int CSwitchGamesXlsx::checkTable()
 			sCommentNew.erase(0, 1);
 		}
 		mRowColumnText[nRowIndex][2].second = sCommentNew;
+		if (m_nCheckLevel <= kCheckLevelCRLF)
+		{
+			continue;
+		}
+		bool bCRC32Error = false;
+		UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
+		FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+		if (fp == nullptr)
+		{
+			bCRC32Error = true;
+		}
+		if (bCRC32Error)
+		{
+			mRowStyle[nRowIndex] = kStyleIdRed;
+			continue;
+		}
+		fseek(fp, 0, SEEK_END);
+		u32 uSfvFileSize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		char* pTemp = new char[uSfvFileSize + 1];
+		fread(pTemp, 1, uSfvFileSize, fp);
+		fclose(fp);
+		pTemp[uSfvFileSize] = 0;
+		string sSfv = pTemp;
+		delete[] pTemp;
+		vector<string> vSfv = SplitOf(sSfv, "\r\n");
+		for (vector<string>::iterator it = vSfv.begin(); it != vSfv.end(); ++it)
+		{
+			*it = trim(*it);
+		}
+		vector<string>::const_iterator itSfv = remove_if(vSfv.begin(), vSfv.end(), empty);
+		vSfv.erase(itSfv, vSfv.end());
+		for (vector<string>::const_iterator it = vSfv.begin(); it != vSfv.end(); ++it)
+		{
+			const string& sLine = *it;
+			vector<string> vLine = Split(sLine, " ");
+			if (vLine.size() != 2)
+			{
+				bCRC32Error = true;
+				break;
+			}
+			UString sFile = AToU(vLine[0]);
+			u32 uCRC32 = SToU32(vLine[1], 16);
+			map<UString, u32>::const_iterator itRar = result.RarFile.find(sFile);
+			if (itRar == result.RarFile.end())
+			{
+				bCRC32Error = true;
+				break;
+			}
+			if (uCRC32 != itRar->second)
+			{
+				bCRC32Error = true;
+				break;
+			}
+		}
+		if (bCRC32Error)
+		{
+			mRowStyle[nRowIndex] = kStyleIdRed;
+			continue;
+		}
 	}
 	return 0;
 }

@@ -11,6 +11,13 @@ namespace tinyxml2
 class CSwitchGamesXlsx
 {
 public:
+	enum ECheckLevel
+	{
+		kCheckLevelName = 0,
+		kCheckLevelCRLF = 1,
+		kCheckLevelSfv = 2,
+		kCheckLevelMax
+	};
 	enum EFillId
 	{
 		kFillIdNone = 0,
@@ -99,6 +106,7 @@ public:
 	void SetXlsxDirName(const UString& a_sXlsxDirName);
 	void SetTableDirName(const UString& a_sTableDirName);
 	void SetResultFileName(const UString& a_sResultFileName);
+	void SetCheckLevel(n32 a_nCheckLevel);
 	void SetRemoteDirName(const UString& a_sRemoteDirName);
 	void SetBaiduUserId(const UString& a_sBaiduUserId);
 	void SetStyleIsGreen(bool a_bStyleIsGreen);
@@ -152,6 +160,7 @@ private:
 	UString m_sXlsxDirName;
 	UString m_sTableDirName;
 	UString m_sResultFileName;
+	n32 m_nCheckLevel;
 	UString m_sRemoteDirName;
 	UString m_sBaiduUserId;
 	bool m_bStyleIsGreen;

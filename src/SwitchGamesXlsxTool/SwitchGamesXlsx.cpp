@@ -2742,6 +2742,46 @@ int CSwitchGamesXlsx::checkTable()
 				}
 			}
 		}
+		bool bNsp = false;
+		bool bUpdate = false;
+		bool bDlc = false;
+		wregex rNsp(L"eshop", regex_constants::ECMAScript | regex_constants::icase);
+		wregex rUpdate(L"update", regex_constants::ECMAScript | regex_constants::icase);
+		wregex rDlc(L"dlc", regex_constants::ECMAScript | regex_constants::icase);
+		wregex rNotDlc(L"incl.*dlc", regex_constants::ECMAScript | regex_constants::icase);
+		if (regex_search(sName, rDlc) && !regex_search(sName, rNotDlc))
+		{
+			bDlc = true;
+		}
+		else if (regex_search(sName, rUpdate))
+		{
+			bUpdate = true;
+		}
+		else if (regex_search(sName, rNsp))
+		{
+			bNsp = true;
+		}
+		if (bNsp)
+		{
+			if (!EndWith(sType, L"nsp"))
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+		}
+		else if (bUpdate)
+		{
+			if (!EndWith(sType, L"update"))
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+		}
+		else if (bDlc)
+		{
+			if (!EndWith(sType, L"dlc"))
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+			}
+		}
 		if (m_nCheckLevel <= kCheckLevelName)
 		{
 			continue;
@@ -3020,6 +3060,7 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			continue;
 		}
+		updateSharedStrings();
 		bool bCRC32Error = false;
 		UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
 		FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
@@ -3030,6 +3071,7 @@ int CSwitchGamesXlsx::checkTable()
 		if (bCRC32Error)
 		{
 			mRowStyle[nRowIndex] = kStyleIdRed;
+			writeTable();
 			continue;
 		}
 		fseek(fp, 0, SEEK_END);
@@ -3074,6 +3116,7 @@ int CSwitchGamesXlsx::checkTable()
 		if (bCRC32Error)
 		{
 			mRowStyle[nRowIndex] = kStyleIdRed;
+			writeTable();
 			continue;
 		}
 	}

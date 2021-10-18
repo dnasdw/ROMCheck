@@ -1,5 +1,4 @@
 #include "SwitchGamesXlsx.h"
-#include <tinyxml2.h>
 
 int resaveXlsx(const UString& a_sXlsxDirName)
 {

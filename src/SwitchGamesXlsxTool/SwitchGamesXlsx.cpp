@@ -2528,6 +2528,7 @@ int CSwitchGamesXlsx::readTable()
 				nRowIndex++;
 			}
 		}
+		sheetInfo.RowCount = nRowIndex;
 	}
 	return 0;
 }
@@ -2902,7 +2903,7 @@ int CSwitchGamesXlsx::checkTable()
 					UPrintf(USTR("%") PRIUS USTR(" %08x\n"), sFile.c_str(), uCRC32);
 				}
 			}
-			if (sExtName == USTR("nfo"))
+			else if (sExtName == USTR("nfo"))
 			{
 				result.NfoFile.push_back(sFile);
 			}
@@ -2916,7 +2917,35 @@ int CSwitchGamesXlsx::checkTable()
 				{
 					if (sExtName[0] >= USTR('r') && sExtName[0] < USTR('|') && sExtName[1] >= USTR('0') && sExtName[1] <= USTR('9') && sExtName[2] >= USTR('0') && sExtName[2] <= USTR('9'))
 					{
-						result.RarFile[sFile] = 0;
+						if (m_nCheckLevel <= kCheckLevelCRLF)
+						{
+							result.RarFile[sFile] = 0;
+						}
+						else
+						{
+							UString sFilePath = sDirPath + USTR("/") + sFile;
+							FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+							if (fp == nullptr)
+							{
+								return 1;
+							}
+							Fseek(fp, 0, SEEK_END);
+							n64 nFileSize = Ftell(fp);
+							Fseek(fp, 0, SEEK_SET);
+							static const u32 c_uBufferSize = 0x01000000;
+							static vector<u8> c_vBin(c_uBufferSize);
+							u32 uCRC32 = 0;
+							while (nFileSize > 0)
+							{
+								u32 uSize = nFileSize >= c_uBufferSize ? c_uBufferSize : static_cast<u32>(nFileSize);
+								fread(&*c_vBin.begin(), 1, uSize, fp);
+								uCRC32 = UpdateCRC32(&*c_vBin.begin(), uSize, uCRC32);
+								nFileSize -= uSize;
+							}
+							fclose(fp);
+							result.RarFile[sFile] = uCRC32;
+							UPrintf(USTR("%") PRIUS USTR(" %08x\n"), sFile.c_str(), uCRC32);
+						}
 					}
 				}
 				else

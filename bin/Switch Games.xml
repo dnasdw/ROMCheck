@@ -30,7 +30,6 @@
         <name>dragon.quest.builders</name>
         <name>dragon.quest.xi</name>
         <name>famicom.(detective|tantei).club</name>
-        <name>family.computer</name>
         <name>fire.emblem</name>
         <name>(fit|fitness).boxing</name>
         <name>flip.wars</name>
@@ -46,8 +45,8 @@
         <name>marvel.ultimate.alliance</name>
         <name>metroid</name>
         <name>miitopia</name>
-        <name>nintendo.entertainment.system</name>
         <name>nintendo.labo</name>
+        <name>nintendo.switch.online</name>
         <name>octopath.traveler</name>
         <name>pikmin</name>
         <name>pokemon</name>
@@ -58,7 +57,6 @@
         <name>snipperclips</name>
         <name>splatoon</name>
         <name>subarashiki.kono.sekai</name>
-        <name>super.famicom</name>
         <name>super.smash.bros</name>
         <name>sushi.striker</name>
         <name>tetris.99</name>

@@ -3090,63 +3090,66 @@ int CSwitchGamesXlsx::checkTable()
 			continue;
 		}
 		updateSharedStrings();
-		bool bCRC32Error = false;
-		UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
-		FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
-		if (fp == nullptr)
+		if (!result.SfvFile.empty())
 		{
-			bCRC32Error = true;
-		}
-		if (bCRC32Error)
-		{
-			mRowStyle[nRowIndex] = kStyleIdRed;
-			writeTable();
-			continue;
-		}
-		fseek(fp, 0, SEEK_END);
-		u32 uSfvFileSize = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		char* pTemp = new char[uSfvFileSize + 1];
-		fread(pTemp, 1, uSfvFileSize, fp);
-		fclose(fp);
-		pTemp[uSfvFileSize] = 0;
-		string sSfv = pTemp;
-		delete[] pTemp;
-		vector<string> vSfv = SplitOf(sSfv, "\r\n");
-		for (vector<string>::iterator it = vSfv.begin(); it != vSfv.end(); ++it)
-		{
-			*it = trim(*it);
-		}
-		vector<string>::const_iterator itSfv = remove_if(vSfv.begin(), vSfv.end(), empty);
-		vSfv.erase(itSfv, vSfv.end());
-		for (vector<string>::const_iterator it = vSfv.begin(); it != vSfv.end(); ++it)
-		{
-			const string& sLine = *it;
-			vector<string> vLine = Split(sLine, " ");
-			if (vLine.size() != 2)
+			bool bCRC32Error = false;
+			UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
+			FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+			if (fp == nullptr)
 			{
 				bCRC32Error = true;
-				break;
 			}
-			UString sFile = AToU(vLine[0]);
-			u32 uCRC32 = SToU32(vLine[1], 16);
-			map<UString, u32>::const_iterator itRar = result.RarFile.find(sFile);
-			if (itRar == result.RarFile.end())
+			if (bCRC32Error)
 			{
-				bCRC32Error = true;
-				break;
+				mRowStyle[nRowIndex] = kStyleIdRed;
+				writeTable();
+				continue;
 			}
-			if (uCRC32 != itRar->second)
+			fseek(fp, 0, SEEK_END);
+			u32 uSfvFileSize = ftell(fp);
+			fseek(fp, 0, SEEK_SET);
+			char* pTemp = new char[uSfvFileSize + 1];
+			fread(pTemp, 1, uSfvFileSize, fp);
+			fclose(fp);
+			pTemp[uSfvFileSize] = 0;
+			string sSfv = pTemp;
+			delete[] pTemp;
+			vector<string> vSfv = SplitOf(sSfv, "\r\n");
+			for (vector<string>::iterator it = vSfv.begin(); it != vSfv.end(); ++it)
 			{
-				bCRC32Error = true;
-				break;
+				*it = trim(*it);
 			}
-		}
-		if (bCRC32Error)
-		{
-			mRowStyle[nRowIndex] = kStyleIdRed;
-			writeTable();
-			continue;
+			vector<string>::const_iterator itSfv = remove_if(vSfv.begin(), vSfv.end(), empty);
+			vSfv.erase(itSfv, vSfv.end());
+			for (vector<string>::const_iterator it = vSfv.begin(); it != vSfv.end(); ++it)
+			{
+				const string& sLine = *it;
+				vector<string> vLine = Split(sLine, " ");
+				if (vLine.size() != 2)
+				{
+					bCRC32Error = true;
+					break;
+				}
+				UString sFile = AToU(vLine[0]);
+				u32 uCRC32 = SToU32(vLine[1], 16);
+				map<UString, u32>::const_iterator itRar = result.RarFile.find(sFile);
+				if (itRar == result.RarFile.end())
+				{
+					bCRC32Error = true;
+					break;
+				}
+				if (uCRC32 != itRar->second)
+				{
+					bCRC32Error = true;
+					break;
+				}
+			}
+			if (bCRC32Error)
+			{
+				mRowStyle[nRowIndex] = kStyleIdRed;
+				writeTable();
+				continue;
+			}
 		}
 	}
 	return 0;

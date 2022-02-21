@@ -1666,7 +1666,7 @@ int CSwitchGamesXlsx::readSheet()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		sheetInfo.TabSelected = i == m_nActiveTabNew;
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		n32 nSheetIndex = i + 1;
@@ -1972,7 +1972,7 @@ int CSwitchGamesXlsx::readSheet()
 								if (pCChild == nullptr)
 								{
 									sSheetXml += "/>";
-									mTableRowColumnText[sTableName][nRowIndex][nColumnIndex] = make_pair(false, L"");
+									m_mTableRowColumnText[sTableName][nRowIndex][nColumnIndex] = make_pair(false, L"");
 								}
 								else
 								{
@@ -2063,7 +2063,7 @@ int CSwitchGamesXlsx::readSheet()
 											{
 												sheetInfo.Width[nColumnIndex] = static_cast<n32>(sStmtW.size());
 											}
-											mTableRowColumnText[sTableName][nRowIndex][nColumnIndex] = make_pair(true, sStmtW);
+											m_mTableRowColumnText[sTableName][nRowIndex][nColumnIndex] = make_pair(true, sStmtW);
 										}
 									}
 									sSheetXml += "</";
@@ -2100,11 +2100,11 @@ int CSwitchGamesXlsx::readSheet()
 		for (vector<wstring>::const_iterator it = m_vSheetName.begin(); it != m_vSheetName.end(); ++it)
 		{
 			const wstring& sTableName = *it;
-			SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+			SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 			map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 			mRowStyle[0] = kStyleIdBlueBold;
 			mRowStyle[1] = kStyleIdBlue;
-			map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+			map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 			mRowColumnText[0][0] = make_pair(true, L"Release Name");
 			mRowColumnText[0][1] = make_pair(true, L"File Name");
 			mRowColumnText[0][2] = make_pair(true, L"Comment");
@@ -2126,9 +2126,9 @@ int CSwitchGamesXlsx::writeSheet()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		string sSheetXml;
 		sSheetXml += "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n";
 		sSheetXml += "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" mc:Ignorable=\"x14ac xr xr2 xr3\" xmlns:x14ac=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac\" xmlns:xr=\"http://schemas.microsoft.com/office/spreadsheetml/2014/revision\" xmlns:xr2=\"http://schemas.microsoft.com/office/spreadsheetml/2015/revision2\" xmlns:xr3=\"http://schemas.microsoft.com/office/spreadsheetml/2016/revision3\" xr:uid=\"{00000000-0001-0000-0000-000000000000}\">";
@@ -2387,9 +2387,9 @@ int CSwitchGamesXlsx::readTable()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
 		FILE* fp = UFopen(sTableFileName.c_str(), USTR("rb"), false);
 		if (fp == nullptr)
@@ -2542,9 +2542,9 @@ int CSwitchGamesXlsx::writeTable()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
 		FILE* fp = UFopen(sTableFileName.c_str(), USTR("wb"), false);
 		if (fp == nullptr)
@@ -2623,9 +2623,9 @@ int CSwitchGamesXlsx::sortTable()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		vector<pair<n32, wstring>> vOrder;
 		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
 		{
@@ -2685,7 +2685,7 @@ int CSwitchGamesXlsx::checkTable()
 		UString sDirPath = WToU(result.Path);
 		const wstring& sType = result.Type;
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sType];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sType];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sType];
 		n32 nRowIndex = -1;
 		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
 		{
@@ -3124,6 +3124,10 @@ int CSwitchGamesXlsx::checkTable()
 			for (vector<string>::const_iterator it = vSfv.begin(); it != vSfv.end(); ++it)
 			{
 				const string& sLine = *it;
+				if (StartWith(sLine, ";"))
+				{
+					continue;
+				}
 				vector<string> vLine = Split(sLine, " ");
 				if (vLine.size() != 2)
 				{
@@ -3131,6 +3135,10 @@ int CSwitchGamesXlsx::checkTable()
 					break;
 				}
 				UString sFile = AToU(vLine[0]);
+				if (EndWith(sFile, USTR(".nfo")))
+				{
+					continue;
+				}
 				u32 uCRC32 = SToU32(vLine[1], 16);
 				map<UString, u32>::const_iterator itRar = result.RarFile.find(sFile);
 				if (itRar == result.RarFile.end())
@@ -3150,6 +3158,7 @@ int CSwitchGamesXlsx::checkTable()
 				writeTable();
 				continue;
 			}
+			writeTable();
 		}
 	}
 	return 0;
@@ -3228,10 +3237,10 @@ void CSwitchGamesXlsx::updateSharedStrings()
 	for (n32 i = 0; i < static_cast<n32>(m_vSheetName.size()); i++)
 	{
 		const wstring& sTableName = m_vSheetName[i];
-		SSheetInfo& sheetInfo = mSheetInfo[sTableName];
+		SSheetInfo& sheetInfo = m_mSheetInfo[sTableName];
 		sheetInfo.Width.clear();
 		sheetInfo.Width.resize(sheetInfo.ColumnCount, 9);
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sTableName];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		for (n32 nRowIndex = 0; nRowIndex < sheetInfo.RowCount; nRowIndex++)
 		{
 			map<n32, pair<bool, wstring>>& mColumnText = mRowColumnText[nRowIndex];
@@ -3303,7 +3312,7 @@ int CSwitchGamesXlsx::makePatchTypeFileList()
 	{
 		const wstring& sType = m_vSheetName[i];
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sType];
-		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = mTableRowColumnText[sType];
+		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sType];
 		map<UString, n32> mDirIndex;
 		for (map<n32, map<n32, pair<bool, wstring>>>::iterator itRow = mRowColumnText.begin(); itRow != mRowColumnText.end(); ++itRow)
 		{

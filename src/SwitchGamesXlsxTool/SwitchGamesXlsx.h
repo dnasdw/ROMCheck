@@ -107,6 +107,7 @@ public:
 	void SetTableDirName(const UString& a_sTableDirName);
 	void SetResultFileName(const UString& a_sResultFileName);
 	void SetCheckLevel(n32 a_nCheckLevel);
+	void SetCheckFilter(const string& a_sCheckFilter);
 	void SetRemoteDirName(const UString& a_sRemoteDirName);
 	void SetBaiduUserId(const UString& a_sBaiduUserId);
 	void SetStyleIsGreen(bool a_bStyleIsGreen);
@@ -161,6 +162,7 @@ private:
 	UString m_sTableDirName;
 	UString m_sResultFileName;
 	n32 m_nCheckLevel;
+	string m_sCheckFilter;
 	UString m_sRemoteDirName;
 	UString m_sBaiduUserId;
 	bool m_bStyleIsGreen;

@@ -40,7 +40,7 @@ int sortTable(const UString& a_sTableDirName)
 	return switchGamesXlsx.Sort();
 }
 
-int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName, n32 a_nCheckLevel)
+int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName, n32 a_nCheckLevel, const UString& a_sCheckFilter)
 {
 	if (a_nCheckLevel >= CSwitchGamesXlsx::kCheckLevelMax)
 	{
@@ -50,6 +50,7 @@ int checkTable(const UString& a_sTableDirName, const UString& a_sResultFileName,
 	switchGamesXlsx.SetTableDirName(a_sTableDirName);
 	switchGamesXlsx.SetResultFileName(a_sResultFileName);
 	switchGamesXlsx.SetCheckLevel(a_nCheckLevel);
+	switchGamesXlsx.SetCheckFilter(UToU8(a_sCheckFilter));
 	return switchGamesXlsx.Check();
 }
 
@@ -113,11 +114,15 @@ int UMain(int argc, UChar* argv[])
 		case USTR('c'):
 			if (argc == 4)
 			{
-				return checkTable(argv[2], argv[3], CSwitchGamesXlsx::kCheckLevelName);
+				return checkTable(argv[2], argv[3], CSwitchGamesXlsx::kCheckLevelName, USTR("1-"));
 			}
 			else if (argc == 5)
 			{
-				return checkTable(argv[2], argv[3], SToN32(argv[4]));
+				return checkTable(argv[2], argv[3], SToN32(argv[4]), USTR("1-"));
+			}
+			else if (argc == 6)
+			{
+				return checkTable(argv[2], argv[3], SToN32(argv[4]), argv[5]);
 			}
 			else
 			{

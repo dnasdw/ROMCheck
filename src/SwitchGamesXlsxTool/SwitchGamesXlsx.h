@@ -181,9 +181,9 @@ private:
 	map<n32, wstring> m_mSharedStrings;
 	map<wstring, n32> m_mSharedStringsIndexNew;
 	map<n32, n32> m_mStyleOldToNew;
-	map<wstring, SSheetInfo> mSheetInfo;
+	map<wstring, SSheetInfo> m_mSheetInfo;
 	map<wstring, map<n32, n32>> m_mTableRowStyle;
-	map<wstring, map<n32, map<n32, pair<bool, wstring>>>> mTableRowColumnText;
+	map<wstring, map<n32, map<n32, pair<bool, wstring>>>> m_mTableRowColumnText;
 	vector<SResult> m_vResult;
 	vector<UString> m_vPatchTypeList;
 	vector<pair<UString, bool>> m_vPatchFileList;

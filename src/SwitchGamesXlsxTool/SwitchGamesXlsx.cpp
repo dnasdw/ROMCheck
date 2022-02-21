@@ -45,6 +45,11 @@ void CSwitchGamesXlsx::SetCheckLevel(n32 a_nCheckLevel)
 	m_nCheckLevel = a_nCheckLevel;
 }
 
+void CSwitchGamesXlsx::SetCheckFilter(const string& a_sCheckFilter)
+{
+	m_sCheckFilter = a_sCheckFilter;
+}
+
 void CSwitchGamesXlsx::SetRemoteDirName(const UString& a_sRemoteDirName)
 {
 	m_sRemoteDirName = a_sRemoteDirName;
@@ -2669,6 +2674,31 @@ int CSwitchGamesXlsx::sortTable()
 
 int CSwitchGamesXlsx::checkTable()
 {
+	set<n32> sCheckIndexFilter;
+	vector<string> vCheckFilter0 = Split(m_sCheckFilter, ",");
+	for (vector<string>::const_iterator it = vCheckFilter0.begin(); it != vCheckFilter0.end(); ++it)
+	{
+		const string& sCheckFilter = *it;
+		vector<string> vCheckFilter1 = Split(sCheckFilter, "-");
+		if (vCheckFilter1.size() == 1)
+		{
+			n32 nCheckFilterIndex = SToN32(vCheckFilter1[0]);
+			sCheckIndexFilter.insert(nCheckFilterIndex);
+		}
+		else if (vCheckFilter1.size() == 2)
+		{
+			n32 nCheckFilterIndexMin = SToN32(vCheckFilter1[0]);
+			n32 nCheckFilterIndexMax = m_vResult.size();
+			if (!vCheckFilter1[1].empty())
+			{
+				nCheckFilterIndexMax = SToN32(vCheckFilter1[1]);
+			}
+			for (n32 i = nCheckFilterIndexMin; i <= nCheckFilterIndexMax; i++)
+			{
+				sCheckIndexFilter.insert(i);
+			}
+		}
+	}
 	bool bAllExist = true;
 	n32 nCheckIndex = 1;
 	for (vector<SResult>::iterator itResult = m_vResult.begin(); itResult != m_vResult.end(); ++itResult)
@@ -2680,6 +2710,10 @@ int CSwitchGamesXlsx::checkTable()
 		if (!result.Exist)
 		{
 			bAllExist = false;
+			continue;
+		}
+		if (sCheckIndexFilter.find(nCheckIndex - 1) == sCheckIndexFilter.end())
+		{
 			continue;
 		}
 		UString sDirPath = WToU(result.Path);

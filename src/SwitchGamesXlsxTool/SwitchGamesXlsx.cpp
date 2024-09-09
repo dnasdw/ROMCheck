@@ -3098,6 +3098,39 @@ int CSwitchGamesXlsx::checkTable()
 				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
 				{
 					sCommentNew += L" with BOM";
+					textFileContent.TextNew.erase(0, 3);
+				}
+				if (EndWith(textFileContent.TextNew, "\r\n"))
+				{
+					textFileContent.TextNew.erase(textFileContent.TextNew.size() - 2, 2);
+				}
+				vector<string> vTextNew = Split(textFileContent.TextNew, "\r\n");
+				textFileContent.TextNew.clear();
+				if (textFileContent.EncodingNew == kEncodingUTF8withBOM)
+				{
+					textFileContent.TextNew += "\xEF\xBB\xBF";
+				}
+				for (vector<string>::const_iterator it = vTextNew.begin(); it != vTextNew.end(); ++it)
+				{
+					const string& sLine = *it;
+					if (sLine.empty() || StartWith(sLine, ";"))
+					{
+						textFileContent.TextNew += sLine + "\r\n";
+					}
+					else
+					{
+						vector<string> vLine(2);
+						string::size_type uSeparatorPos = sLine.rfind(" ");
+						if (uSeparatorPos == string::npos)
+						{
+							return 1;
+						}
+						vLine[0] = sLine.substr(0, uSeparatorPos);
+						vLine[1] = sLine.substr(uSeparatorPos + 1);
+						const string& sFile = vLine[0];
+						u32 uCRC32 = SToU32(vLine[1], 16);
+						textFileContent.TextNew += sFile + Format(" %08x\r\n", uCRC32);
+					}
 				}
 			}
 			else

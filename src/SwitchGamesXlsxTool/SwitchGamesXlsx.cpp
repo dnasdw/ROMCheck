@@ -567,9 +567,9 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 	string sTextNoCRLF = Replace(a_TextFileContent.TextOld, "\r\n", "");
 	string sTextNoCR = Replace(a_TextFileContent.TextOld, "\r", "");
 	string sTextNoLF = Replace(a_TextFileContent.TextOld, "\n", "");
-	n32 nCRLFCount = (a_TextFileContent.TextOld.size() - sTextNoCRLF.size()) / 2;
-	n32 nCROnlyCount = (a_TextFileContent.TextOld.size() - sTextNoCR.size()) - nCRLFCount;
-	n32 nLFOnlyCount = (a_TextFileContent.TextOld.size() - sTextNoLF.size()) - nCRLFCount;
+	n32 nCRLFCount = static_cast<n32>(a_TextFileContent.TextOld.size() - sTextNoCRLF.size()) / 2;
+	n32 nCROnlyCount = static_cast<n32>(a_TextFileContent.TextOld.size() - sTextNoCR.size()) - nCRLFCount;
+	n32 nLFOnlyCount = static_cast<n32>(a_TextFileContent.TextOld.size() - sTextNoLF.size()) - nCRLFCount;
 	if (nCROnlyCount > nCRLFCount && nCROnlyCount > nLFOnlyCount)
 	{
 		if (nCRLFCount == 0 && nLFOnlyCount == 0)
@@ -649,7 +649,7 @@ bool CSwitchGamesXlsx::makeDir(const UString& a_sDirPath)
 {
 	UString sDirPath = a_sDirPath;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
-	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
+	u32 uMaxPath = static_cast<u32>(sDirPath.size() + MAX_PATH * 2);
 	wchar_t* pDirPath = new wchar_t[uMaxPath];
 	if (_wfullpath(pDirPath, UToW(sDirPath).c_str(), uMaxPath) == nullptr)
 	{
@@ -706,7 +706,7 @@ int CSwitchGamesXlsx::writeFileString(const UString& a_sFilePath, const string& 
 		return 1;
 	}
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
-	u32 uMaxPath = sDirPath.size() + MAX_PATH * 2;
+	u32 uMaxPath = static_cast<u32>(sDirPath.size() + MAX_PATH * 2);
 	wchar_t* pFilePath = new wchar_t[uMaxPath];
 	if (_wfullpath(pFilePath, UToW(a_sFilePath).c_str(), uMaxPath) == nullptr)
 	{
@@ -2688,7 +2688,7 @@ int CSwitchGamesXlsx::checkTable()
 		else if (vCheckFilter1.size() == 2)
 		{
 			n32 nCheckFilterIndexMin = SToN32(vCheckFilter1[0]);
-			n32 nCheckFilterIndexMax = m_vResult.size();
+			n32 nCheckFilterIndexMax = static_cast<n32>(m_vResult.size());
 			if (!vCheckFilter1[1].empty())
 			{
 				nCheckFilterIndexMax = SToN32(vCheckFilter1[1]);
@@ -3488,7 +3488,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat() const
 {
 	UString sTableDirName = m_sTableDirName;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
-	u32 uMaxPath = sTableDirName.size() + MAX_PATH * 2;
+	u32 uMaxPath = static_cast<u32>(sTableDirName.size() + MAX_PATH * 2);
 	wchar_t* pTableDirName = new wchar_t[uMaxPath];
 	if (_wfullpath(pTableDirName, UToW(sTableDirName).c_str(), uMaxPath) == nullptr)
 	{
@@ -3538,7 +3538,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 {
 	UString sTableDirName = m_sTableDirName;
 #if SDW_PLATFORM == SDW_PLATFORM_WINDOWS
-	u32 uMaxPath = sTableDirName.size() + MAX_PATH * 2;
+	u32 uMaxPath = static_cast<u32>(sTableDirName.size() + MAX_PATH * 2);
 	wchar_t* pTableDirName = new wchar_t[uMaxPath];
 	if (_wfullpath(pTableDirName, UToW(sTableDirName).c_str(), uMaxPath) == nullptr)
 	{

@@ -368,14 +368,14 @@ string CSwitchGamesXlsx::encodePosition(n32 a_nRowIndex, n32 a_nColumnIndex)
 
 bool CSwitchGamesXlsx::copyFile(const UString& a_sDestFileName, const UString& a_sSrcFileName)
 {
-	FILE* fpSrc = UFopen(a_sSrcFileName.c_str(), USTR("rb"), false);
+	FILE* fpSrc = UFopen(a_sSrcFileName, USTR("rb"), false);
 	if (fpSrc == nullptr)
 	{
 		return false;
 	}
 	fseek(fpSrc, 0, SEEK_END);
 	n64 nFileSize = ftell(fpSrc);
-	FILE* fpDest = UFopen(a_sDestFileName.c_str(), USTR("wb"), false);
+	FILE* fpDest = UFopen(a_sDestFileName, USTR("wb"), false);
 	if (fpDest == nullptr)
 	{
 		fclose(fpSrc);
@@ -435,7 +435,7 @@ bool CSwitchGamesXlsx::fileListCompare(const pair<UString, bool>& lhs, const pai
 
 int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent, bool a_bAllowEmpty)
 {
-	FILE* fp = UFopen(a_sFilePath.c_str(), USTR("rb"), true);
+	FILE* fp = UFopen(a_sFilePath, USTR("rb"), true);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -723,7 +723,7 @@ int CSwitchGamesXlsx::writeFileString(const UString& a_sFilePath, const string& 
 		sFilePath = USTR("\\\\?\\") + sFilePath;
 	}
 #endif
-	FILE* fp = UFopen(sFilePath.c_str(), USTR("wb"), false);
+	FILE* fp = UFopen(sFilePath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -736,7 +736,7 @@ int CSwitchGamesXlsx::writeFileString(const UString& a_sFilePath, const string& 
 int CSwitchGamesXlsx::readConfig()
 {
 	UString sConfigXmlPath = m_sModuleDirName + USTR("/Switch Games.xml");
-	FILE* fp = UFopen(sConfigXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sConfigXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -833,7 +833,7 @@ int CSwitchGamesXlsx::readConfig()
 int CSwitchGamesXlsx::readWorkbook()
 {
 	UString sWorkbookXmlPath = m_sXlsxDirName + USTR("/xl/workbook.xml");
-	FILE* fp = UFopen(sWorkbookXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sWorkbookXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -890,7 +890,7 @@ int CSwitchGamesXlsx::readWorkbook()
 int CSwitchGamesXlsx::readSharedStrings()
 {
 	UString sSharedStringsXmlPath = m_sXlsxDirName + USTR("/xl/sharedStrings.xml");
-	FILE* fp = UFopen(sSharedStringsXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sSharedStringsXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 0;
@@ -1136,7 +1136,7 @@ int CSwitchGamesXlsx::readSharedStrings()
 int CSwitchGamesXlsx::readStyles()
 {
 	UString sStylesXmlPath = m_sXlsxDirName + USTR("/xl/styles.xml");
-	FILE* fp = UFopen(sStylesXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sStylesXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1351,7 +1351,7 @@ int CSwitchGamesXlsx::resaveApp()
 		return 1;
 	}
 	UString sAppXmlPath = m_sXlsxDirName + USTR("/docProps/app.xml");
-	FILE* fp = UFopen(sAppXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sAppXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1451,7 +1451,7 @@ int CSwitchGamesXlsx::resaveApp()
 		m_mSheetIndexOld[sVtLpstrText] = nSheetIndexOld++;
 	}
 	UString sSwitchGamesAppXmlPath = m_sModuleDirName + USTR("/Switch Games/docProps/app.xml");
-	fp = UFopen(sSwitchGamesAppXmlPath.c_str(), USTR("rb"), false);
+	fp = UFopen(sSwitchGamesAppXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1478,7 +1478,7 @@ int CSwitchGamesXlsx::resaveApp()
 		tinyxml2::XMLElement* pVtVectorVtLpstr = pTitlesOfPartsVtVector->InsertNewChildElement("vt:lpstr");
 		pVtVectorVtLpstr->SetText(WToU8(m_vSheetName[i]).c_str());
 	}
-	fp = UFopen(sAppXmlPath.c_str(), USTR("wb"), false);
+	fp = UFopen(sAppXmlPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1500,7 +1500,7 @@ int CSwitchGamesXlsx::resaveCore()
 		return 1;
 	}
 	UString sCoreXmlPath = m_sXlsxDirName + USTR("/docProps/core.xml");
-	FILE* fp = UFopen(sCoreXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sCoreXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1565,7 +1565,7 @@ int CSwitchGamesXlsx::resaveCore()
 		m_sLastModifiedDateTime = pCpCorePropertiesDctermsModifiedText;
 	}
 	UString sSwitchGamesCoreXmlPath = m_sModuleDirName + USTR("/Switch Games/docProps/core.xml");
-	fp = UFopen(sSwitchGamesCoreXmlPath.c_str(), USTR("rb"), false);
+	fp = UFopen(sSwitchGamesCoreXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1583,7 +1583,7 @@ int CSwitchGamesXlsx::resaveCore()
 	pCpCorePropertiesCpLastModifiedBy->SetText(m_sLastModifiedBy.c_str());
 	pCpCorePropertiesDctermsModified = pDocCpCoreProperties->FirstChildElement("dcterms:modified");
 	pCpCorePropertiesDctermsModified->SetText(m_sLastModifiedDateTime.c_str());
-	fp = UFopen(sCoreXmlPath.c_str(), USTR("wb"), false);
+	fp = UFopen(sCoreXmlPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1607,7 +1607,7 @@ int CSwitchGamesXlsx::resaveWorkbookRels() const
 	UString sWorkbookXmlRelsPath = m_sXlsxDirName + USTR("/xl/_rels/workbook.xml.rels");
 	tinyxml2::XMLDocument relsDoc;
 	UString sSwitchGamesWorkbookXmlRelsPath = m_sModuleDirName + USTR("/Switch Games/xl/_rels/workbook.xml.rels");
-	FILE* fp = UFopen(sSwitchGamesWorkbookXmlRelsPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sSwitchGamesWorkbookXmlRelsPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1639,7 +1639,7 @@ int CSwitchGamesXlsx::resaveWorkbookRels() const
 		pRelationshipsRelationship->SetAttribute("Type", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet");
 		pRelationshipsRelationship->SetAttribute("Target", Format("worksheets/sheet%d.xml", i).c_str());
 	}
-	fp = UFopen(sWorkbookXmlRelsPath.c_str(), USTR("wb"), false);
+	fp = UFopen(sWorkbookXmlRelsPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -1691,7 +1691,7 @@ int CSwitchGamesXlsx::readSheet()
 			}
 		}
 		UString sSheetXmlPath = m_sXlsxDirName + Format(USTR("/xl/worksheets/sheet%d.xml"), nSheetIndex);
-		FILE* fp = UFopen(sSheetXmlPath.c_str(), USTR("rb"), false);
+		FILE* fp = UFopen(sSheetXmlPath, USTR("rb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
@@ -2210,7 +2210,7 @@ int CSwitchGamesXlsx::writeSheet()
 		sSheetXml += "<pageSetup paperSize=\"9\" orientation=\"portrait\" r:id=\"rId1\"/>";
 		sSheetXml += "</worksheet>";
 		UString sSheetXmlPath = m_sXlsxDirName + Format(USTR("/xl/worksheets/sheet%d.xml"), i + 1);
-		FILE* fp = UFopen(sSheetXmlPath.c_str(), USTR("wb"), false);
+		FILE* fp = UFopen(sSheetXmlPath, USTR("wb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
@@ -2238,7 +2238,7 @@ int CSwitchGamesXlsx::writeSharedStrings() const
 		sSharedStringsXml += "</si>";
 	}
 	sSharedStringsXml += "</sst>";
-	FILE* fp = UFopen(sSharedStringsXmlPath.c_str(), USTR("wb"), false);
+	FILE* fp = UFopen(sSharedStringsXmlPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -2272,7 +2272,7 @@ int CSwitchGamesXlsx::resaveWorkbook() const
 	UString sWorkbookXmlPath = m_sXlsxDirName + USTR("/xl/workbook.xml");
 	tinyxml2::XMLDocument xmlDoc;
 	UString sSwitchGamesWorkbookXmlPath = m_sModuleDirName + USTR("/Switch Games/xl/workbook.xml");
-	FILE* fp = UFopen(sSwitchGamesWorkbookXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sSwitchGamesWorkbookXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -2309,7 +2309,7 @@ int CSwitchGamesXlsx::resaveWorkbook() const
 		pSheetsSheet->SetAttribute("sheetId", i + 1);
 		pSheetsSheet->SetAttribute("r:id", Format("rId%d", i + 1).c_str());
 	}
-	fp = UFopen(sWorkbookXmlPath.c_str(), USTR("wb"), false);
+	fp = UFopen(sWorkbookXmlPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -2333,7 +2333,7 @@ int CSwitchGamesXlsx::resaveContentTypes() const
 	UString sContentTypesXmlPath = m_sXlsxDirName + USTR("/[Content_Types].xml");
 	tinyxml2::XMLDocument xmlDoc;
 	UString sSwitchGamesContentTypesXmlPath = m_sModuleDirName + USTR("/Switch Games/[Content_Types].xml");
-	FILE* fp = UFopen(sSwitchGamesContentTypesXmlPath.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sSwitchGamesContentTypesXmlPath, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -2376,7 +2376,7 @@ int CSwitchGamesXlsx::resaveContentTypes() const
 	pTypesOverride = pDocTypes->InsertNewChildElement("Override");
 	pTypesOverride->SetAttribute("PartName", "/docProps/app.xml");
 	pTypesOverride->SetAttribute("ContentType", "application/vnd.openxmlformats-officedocument.extended-properties+xml");
-	fp = UFopen(sContentTypesXmlPath.c_str(), USTR("wb"), false);
+	fp = UFopen(sContentTypesXmlPath, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -2400,7 +2400,7 @@ int CSwitchGamesXlsx::readTable()
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
-		FILE* fp = UFopen(sTableFileName.c_str(), USTR("rb"), false);
+		FILE* fp = UFopen(sTableFileName, USTR("rb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
@@ -2555,7 +2555,7 @@ int CSwitchGamesXlsx::writeTable()
 		map<n32, n32>& mRowStyle = m_mTableRowStyle[sTableName];
 		map<n32, map<n32, pair<bool, wstring>>>& mRowColumnText = m_mTableRowColumnText[sTableName];
 		UString sTableFileName = m_sTableDirName + USTR("/") + WToU(sTableName) + USTR(".tsv");
-		FILE* fp = UFopen(sTableFileName.c_str(), USTR("wb"), false);
+		FILE* fp = UFopen(sTableFileName, USTR("wb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
@@ -2918,7 +2918,7 @@ int CSwitchGamesXlsx::checkTable()
 				else
 				{
 					UString sFilePath = sDirPath + USTR("/") + sFile;
-					FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+					FILE* fp = UFopen(sFilePath, USTR("rb"), false);
 					if (fp == nullptr)
 					{
 						return 1;
@@ -2962,7 +2962,7 @@ int CSwitchGamesXlsx::checkTable()
 						else
 						{
 							UString sFilePath = sDirPath + USTR("/") + sFile;
-							FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+							FILE* fp = UFopen(sFilePath, USTR("rb"), false);
 							if (fp == nullptr)
 							{
 								return 1;
@@ -3165,7 +3165,7 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			bool bCRC32Error = false;
 			UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
-			FILE* fp = UFopen(sFilePath.c_str(), USTR("rb"), false);
+			FILE* fp = UFopen(sFilePath, USTR("rb"), false);
 			if (fp == nullptr)
 			{
 				bCRC32Error = true;
@@ -3237,7 +3237,7 @@ int CSwitchGamesXlsx::checkTable()
 
 int CSwitchGamesXlsx::readResult()
 {
-	FILE* fp = UFopen(m_sResultFileName.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(m_sResultFileName, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3537,7 +3537,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat() const
 	string sSrcPrefix = UToU8(sTableDirName);
 	string sDestPrefix = UToU8(m_sRemoteDirName);
 	UString sRcloneCopyBatFileName = m_sTableDirName + USTR("/rclone_0_copy.bat");
-	FILE* fp = UFopen(sRcloneCopyBatFileName.c_str(), USTR("wb"), false);
+	FILE* fp = UFopen(sRcloneCopyBatFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3553,7 +3553,7 @@ int CSwitchGamesXlsx::makeRclonePatchBat() const
 	fprintf(fp, "PAUSE\r\n");
 	fclose(fp);
 	UString sRcloneCheckBatFileName = m_sTableDirName + USTR("/rclone_1_check.bat");
-	fp = UFopen(sRcloneCheckBatFileName.c_str(), USTR("wb"), false);
+	fp = UFopen(sRcloneCheckBatFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3598,7 +3598,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 		sBaiduPCSGoUploadTxtFileName = m_sTableDirName + USTR("/baidupcs-go_2_0_upload.txt");
 		sBaiduPCSGoUploadBatFileName = m_sTableDirName + USTR("/baidupcs-go_2_1_upload.bat");
 	}
-	FILE* fp = UFopen(sBaiduPCSGoUploadTxtFileName.c_str(), USTR("wb"), false);
+	FILE* fp = UFopen(sBaiduPCSGoUploadTxtFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3621,7 +3621,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 		}
 	}
 	fclose(fp);
-	fp = UFopen(sBaiduPCSGoUploadBatFileName.c_str(), USTR("wb"), false);
+	fp = UFopen(sBaiduPCSGoUploadBatFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3647,7 +3647,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 		sBaiduPCSGoSumMetaTxtFileName = m_sTableDirName + USTR("/baidupcs-go_3_0_sum_meta.txt");
 		sBaiduPCSGoSumMetaCheckBatFileName = m_sTableDirName + USTR("/baidupcs-go_3_1_sum_meta_check.bat");
 	}
-	fp = UFopen(sBaiduPCSGoSumMetaTxtFileName.c_str(), USTR("wb"), false);
+	fp = UFopen(sBaiduPCSGoSumMetaTxtFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -3664,7 +3664,7 @@ int CSwitchGamesXlsx::makeBaiduPCSGoPatchBat() const
 		}
 	}
 	fclose(fp);
-	fp = UFopen(sBaiduPCSGoSumMetaCheckBatFileName.c_str(), USTR("wb"), false);
+	fp = UFopen(sBaiduPCSGoSumMetaCheckBatFileName, USTR("wb"), false);
 	if (fp == nullptr)
 	{
 		return 1;

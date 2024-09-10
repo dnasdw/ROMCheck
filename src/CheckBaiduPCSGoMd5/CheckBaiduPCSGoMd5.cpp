@@ -52,7 +52,7 @@ int UMain(int argc, UChar* argv[])
 	sErrorBat += "POPD\r\n";
 	sErrorBat += "PAUSE\r\n";
 	string sErrorTxt;
-	FILE* fp = UFopen(sMd5Path.c_str(), USTR("rb"), false);
+	FILE* fp = UFopen(sMd5Path, USTR("rb"), false);
 	if (fp == nullptr)
 	{
 		return 1;
@@ -201,14 +201,14 @@ int UMain(int argc, UChar* argv[])
 	}
 	if (bError)
 	{
-		fp = UFopen(sMd5ErrorTxtPath.c_str(), USTR("wb"), false);
+		fp = UFopen(sMd5ErrorTxtPath, USTR("wb"), false);
 		if (fp == nullptr)
 		{
 			return 1;
 		}
 		fwrite(sErrorTxt.c_str(), 1, sErrorTxt.size(), fp);
 		fclose(fp);
-		fp = UFopen(sMd5ErrorBatPath.c_str(), USTR("wb"), false);
+		fp = UFopen(sMd5ErrorBatPath, USTR("wb"), false);
 		if (fp == nullptr)
 		{
 			return 1;

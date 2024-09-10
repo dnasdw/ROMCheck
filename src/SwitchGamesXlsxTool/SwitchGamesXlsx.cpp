@@ -433,7 +433,7 @@ bool CSwitchGamesXlsx::fileListCompare(const pair<UString, bool>& lhs, const pai
 	return pathCompare(lhs.first, rhs.first);
 }
 
-int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent)
+int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent& a_TextFileContent, bool a_bAllowEmpty)
 {
 	FILE* fp = UFopen(a_sFilePath.c_str(), USTR("rb"), true);
 	if (fp == nullptr)
@@ -442,7 +442,7 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 	}
 	fseek(fp, 0, SEEK_END);
 	u32 uFileSize = ftell(fp);
-	if (uFileSize == 0)
+	if (uFileSize == 0 && !a_bAllowEmpty)
 	{
 		fclose(fp);
 		UPrintf(USTR("file size == 0: %") PRIUS USTR("\n"), a_sFilePath.c_str());
@@ -616,6 +616,10 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 		{
 			a_TextFileContent.LineTypeOld = kLineTypeLFMix;
 		}
+	}
+	else if (EndWith(a_sFilePath, USTR(".nfo")) && uFileSize == 0 && a_bAllowEmpty)
+	{
+		a_TextFileContent.LineTypeOld = kLineTypeLF;
 	}
 	if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld != kLineTypeUnknown && nCROnlyCount == 0)
 	{
@@ -3022,7 +3026,7 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			UString sFilePath = sDirPath + USTR("/") + result.NfoFile[0];
 			STextFileContent textFileContent;
-			if (readTextFile(sFilePath, textFileContent) != 0)
+			if (readTextFile(sFilePath, textFileContent, true) != 0)
 			{
 				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
 				mRowStyle[nRowIndex] = kStyleIdRed;
@@ -3070,7 +3074,7 @@ int CSwitchGamesXlsx::checkTable()
 		{
 			UString sFilePath = sDirPath + USTR("/") + result.SfvFile[0];
 			STextFileContent textFileContent;
-			if (readTextFile(sFilePath, textFileContent) != 0)
+			if (readTextFile(sFilePath, textFileContent, false) != 0)
 			{
 				UPrintf(USTR("read text file error: %") PRIUS USTR("\n"), sFilePath.c_str());
 				mRowStyle[nRowIndex] = kStyleIdRed;

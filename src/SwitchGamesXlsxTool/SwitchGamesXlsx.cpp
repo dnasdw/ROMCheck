@@ -621,6 +621,17 @@ int CSwitchGamesXlsx::readTextFile(const UString& a_sFilePath, STextFileContent&
 	{
 		a_TextFileContent.LineTypeOld = kLineTypeLF;
 	}
+	else if (nCRLFCount == 0 && nCROnlyCount == 0 && nLFOnlyCount == 0)
+	{
+		if (EndWith(a_sFilePath, USTR(".nfo")))
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeLF;
+		}
+		else if (EndWith(a_sFilePath, USTR(".sfv")))
+		{
+			a_TextFileContent.LineTypeOld = kLineTypeCRLF;
+		}
+	}
 	if (EndWith(a_sFilePath, USTR(".nfo")) && a_TextFileContent.LineTypeOld != kLineTypeUnknown && nCROnlyCount == 0)
 	{
 		a_TextFileContent.TextNew = Replace(a_TextFileContent.TextNew, "\r", "");

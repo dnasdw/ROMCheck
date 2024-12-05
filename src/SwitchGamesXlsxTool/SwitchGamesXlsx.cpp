@@ -3196,6 +3196,10 @@ int CSwitchGamesXlsx::checkTable()
 			pTemp[uSfvFileSize] = 0;
 			string sSfv = pTemp;
 			delete[] pTemp;
+			if (StartWith(sSfv, "\xEF\xBB\xBF"))
+			{
+				sSfv.erase(0, 3);
+			}
 			vector<string> vSfv = SplitOf(sSfv, "\r\n");
 			for (vector<string>::iterator it = vSfv.begin(); it != vSfv.end(); ++it)
 			{

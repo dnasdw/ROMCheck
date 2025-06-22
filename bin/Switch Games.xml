@@ -5,10 +5,12 @@
         <sheet>nsp</sheet>
         <sheet>update</sheet>
         <sheet>dlc</sheet>
+        <sheet>other</sheet>
         <sheet>nuked_xci</sheet>
         <sheet>nuked_nsp</sheet>
         <sheet>nuked_update</sheet>
         <sheet>nuked_dlc</sheet>
+        <sheet>nuked_other</sheet>
     </sheets>
     <green>
         <name>1.2.switch</name>
